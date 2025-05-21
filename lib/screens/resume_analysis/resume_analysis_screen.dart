@@ -3,13 +3,13 @@ import 'package:animate_do/animate_do.dart';
 import 'package:provider/provider.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../services/api_service.dart';
-import '../../services/history_service.dart'; // Add for history saving
+import '../../services/history_service.dart';
 import '../../model/analysis_model.dart';
 import 'widgets/analysis_header.dart';
 import 'widgets/score_card.dart';
 import 'widgets/feedback_card.dart';
 import 'widgets/keyword_feedback.dart';
-import 'widgets/section_feedback_card.dart'; // Use this, assuming duplicate resolved
+import 'widgets/section_feedback_card.dart';
 import 'widgets/feedback_list.dart';
 import 'widgets/analysis_loading.dart';
 import 'widgets/analysis_error.dart';
@@ -35,7 +35,7 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen>
   late final TabController _tabController;
   late final AnimationController _fabAnimationController;
   final ScrollController _scrollController = ScrollController();
-  bool _isInitialized = false; // Add this flag
+  bool _isInitialized = false;
 
   @override
   void initState() {
@@ -46,7 +46,6 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen>
       vsync: this,
     )..forward();
 
-    // Use preloaded data if available
     _analysisFuture =
         widget.preloadedAnalysis != null
             ? Future.value(widget.preloadedAnalysis)
@@ -62,40 +61,83 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen>
         jobDescription: widget.args['jobDesc'] ?? '',
       );
     } catch (e) {
-      // Handle error and return a default AnalysisModel or rethrow
       debugPrint('Analysis error: $e');
+      _showSnackBar('Failed to analyze resume: $e', isError: true);
       throw Exception('Failed to analyze resume: $e');
     }
+  }
+
+  void _showSnackBar(String message, {bool isError = false}) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final textColor =
+        isDark ? const Color(0xFFE0E0E0) : const Color(0xFF212121);
+    final backgroundColor =
+        isError
+            ? Colors.red.withOpacity(0.8)
+            : (isDark ? const Color(0xFF00E676) : const Color(0xFF4CAF50))
+                .withOpacity(0.8);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message, style: TextStyle(color: textColor)),
+        backgroundColor: backgroundColor,
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final fileName = widget.args['fileName'] ?? 'Resume Analysis';
 
+    // Define theme-dependent colors
+    final primaryColor = const Color(0xFF00C853);
+    final accentColor =
+        isDark ? const Color(0xFF00E676) : const Color(0xFF4CAF50);
+    final backgroundColor =
+        isDark ? const Color(0xFF121212) : const Color(0xFFE8F5E9);
+    final textColor =
+        isDark ? const Color(0xFFE0E0E0) : const Color(0xFF212121);
+    final secondaryTextColor =
+        isDark ? const Color(0xFFB0BEC5) : const Color(0xFF757575);
+
     return Scaffold(
+      backgroundColor: backgroundColor,
       appBar: AppBar(
         title: Text(
           widget.preloadedAnalysis != null ? 'Historical Analysis' : fileName,
+          style: TextStyle(
+            color: textColor,
+            fontWeight: FontWeight.w600,
+            fontSize: 16,
+          ),
         ),
+        backgroundColor: backgroundColor,
         actions: [
-          if (widget.preloadedAnalysis ==
-              null) // Only show refresh for new analyses
+          if (widget.preloadedAnalysis == null)
             IconButton(
-              icon: const Icon(Icons.refresh),
-              onPressed: _startAnalysis,
+              icon: Icon(Icons.refresh, color: accentColor),
+              onPressed: () {
+                setState(() {
+                  _analysisFuture = _startAnalysis();
+                });
+              },
             ),
         ],
-        elevation: 4,
-        shadowColor: Colors.black45,
+        elevation: 2,
+        shadowColor: Colors.black26,
         bottom: TabBar(
           controller: _tabController,
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.white70,
-          indicatorColor: Colors.white,
+          labelColor: accentColor,
+          unselectedLabelColor: secondaryTextColor,
+          indicatorColor: accentColor,
           indicatorWeight: 3,
-          labelStyle: theme.textTheme.bodyMedium?.copyWith(
+          labelStyle: TextStyle(
             fontWeight: FontWeight.bold,
+            color: textColor,
+            fontSize: 14,
           ),
           tabs: const [
             Tab(text: 'Scores'),
@@ -103,16 +145,6 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen>
             Tab(text: 'Sections'),
             Tab(text: 'Confidence'),
           ],
-        ),
-        backgroundColor: Colors.transparent,
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Color(0xFF4CAF50), Color(0xFF009688)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
         ),
       ),
       floatingActionButton: ScaleTransition(
@@ -123,10 +155,14 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen>
           ),
         ),
         child: FloatingActionButton(
-          onPressed: _startAnalysis,
-          backgroundColor: const Color(0xFF4CAF50),
+          onPressed: () {
+            setState(() {
+              _analysisFuture = _startAnalysis();
+            });
+          },
+          backgroundColor: primaryColor,
           tooltip: 'Re-analyze',
-          hoverColor: const Color(0xFF388E3C),
+          hoverColor: accentColor,
           child: const Icon(Icons.refresh, color: Colors.white),
         ),
       ),
@@ -150,8 +186,16 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen>
     AsyncSnapshot<AnalysisModel> snapshot,
     ThemeData theme,
   ) {
+    final isDark = theme.brightness == Brightness.dark;
+    final textColor =
+        isDark ? const Color(0xFFE0E0E0) : const Color(0xFF212121);
+    final primaryColor = const Color(0xFF00C853);
+
     if (!_isInitialized) {
-      return const Center(child: CircularProgressIndicator());
+      return Container(
+        color: isDark ? const Color(0xFF121212) : const Color(0xFFE8F5E9),
+        child: Center(child: CircularProgressIndicator(color: primaryColor)),
+      );
     }
 
     if (snapshot.connectionState == ConnectionState.waiting) {
@@ -173,14 +217,16 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen>
       return AnalysisError(
         message:
             'No analysis data available. Please re-analyze or upload a resume.',
-        onRetry: _startAnalysis,
+        onRetry: () {
+          setState(() {
+            _analysisFuture = _startAnalysis();
+          });
+        },
       );
     }
 
     final analysis = snapshot.data!;
-    // Save to history
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // Only save NEW analyses (skip if viewing history)
       if (widget.preloadedAnalysis == null) {
         Provider.of<HistoryService>(
           context,
@@ -202,6 +248,10 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen>
   }
 
   Widget _buildScoresTab(AnalysisModel analysis, ThemeData theme) {
+    final isDark = theme.brightness == Brightness.dark;
+    final cardColor =
+        isDark ? const Color(0xFF1B5E20).withOpacity(0.3) : Colors.white;
+
     return CustomScrollView(
       controller: _scrollController,
       slivers: [
@@ -210,10 +260,16 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen>
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Card(
-                elevation: 6,
-                shadowColor: Colors.black26,
+                elevation: 2,
+                color: cardColor,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
+                  side: BorderSide(
+                    color:
+                        isDark
+                            ? const Color(0xFF00E676).withOpacity(0.5)
+                            : const Color(0xFF4CAF50).withOpacity(0.5),
+                  ),
                 ),
                 child: AnalysisHeader(analysis: analysis),
               ),
@@ -244,9 +300,26 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen>
   }
 
   Widget _buildScoresChart(AnalysisModel analysis, ThemeData theme) {
+    final isDark = theme.brightness == Brightness.dark;
+    final cardColor =
+        isDark ? const Color(0xFF1B5E20).withOpacity(0.3) : Colors.white;
+    final textColor =
+        isDark ? const Color(0xFFE0E0E0) : const Color(0xFF212121);
+    final secondaryTextColor =
+        isDark ? const Color(0xFFB0BEC5) : const Color(0xFF757575);
+
     return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      elevation: 2,
+      color: cardColor,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(
+          color:
+              isDark
+                  ? const Color(0xFF00E676).withOpacity(0.5)
+                  : const Color(0xFF4CAF50).withOpacity(0.5),
+        ),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -254,9 +327,10 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen>
           children: [
             Text(
               'Score Overview',
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: theme.colorScheme.onSurface,
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 16,
+                color: textColor,
               ),
             ),
             const SizedBox(height: 12),
@@ -277,8 +351,9 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen>
                         getTitlesWidget: (value, meta) {
                           return Text(
                             '${value.toInt()}%',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
+                            style: TextStyle(
+                              color: secondaryTextColor,
+                              fontSize: 12,
                             ),
                           );
                         },
@@ -300,8 +375,9 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen>
                           ];
                           return Text(
                             labels[value.toInt()],
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
+                            style: TextStyle(
+                              color: secondaryTextColor,
+                              fontSize: 12,
                             ),
                           );
                         },
@@ -320,7 +396,7 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen>
                       barRods: [
                         BarChartRodData(
                           toY: analysis.atsScore.toDouble(),
-                          color: const Color(0xFF4CAF50),
+                          color: const Color(0xFF00C853),
                           borderRadius: const BorderRadius.vertical(
                             top: Radius.circular(4),
                           ),
@@ -332,7 +408,7 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen>
                       barRods: [
                         BarChartRodData(
                           toY: analysis.grammarScore.toDouble(),
-                          color: const Color(0xFF4CAF50),
+                          color: const Color(0xFF00C853),
                           borderRadius: const BorderRadius.vertical(
                             top: Radius.circular(4),
                           ),
@@ -344,7 +420,7 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen>
                       barRods: [
                         BarChartRodData(
                           toY: analysis.readabilityScore.toDouble(),
-                          color: const Color(0xFF4CAF50),
+                          color: const Color(0xFF00C853),
                           borderRadius: const BorderRadius.vertical(
                             top: Radius.circular(4),
                           ),
@@ -356,7 +432,7 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen>
                       barRods: [
                         BarChartRodData(
                           toY: analysis.verbQualityScore.toDouble(),
-                          color: const Color(0xFF4CAF50),
+                          color: const Color(0xFF00C853),
                           borderRadius: const BorderRadius.vertical(
                             top: Radius.circular(4),
                           ),
@@ -368,7 +444,7 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen>
                       barRods: [
                         BarChartRodData(
                           toY: analysis.formatScore.toDouble(),
-                          color: const Color(0xFF4CAF50),
+                          color: const Color(0xFF00C853),
                           borderRadius: const BorderRadius.vertical(
                             top: Radius.circular(4),
                           ),
@@ -380,7 +456,7 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen>
                       barRods: [
                         BarChartRodData(
                           toY: analysis.jobMatchScore.toDouble(),
-                          color: const Color(0xFF4CAF50),
+                          color: const Color(0xFF00C853),
                           borderRadius: const BorderRadius.vertical(
                             top: Radius.circular(4),
                           ),
@@ -392,7 +468,7 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen>
                       barRods: [
                         BarChartRodData(
                           toY: analysis.coherenceScore.toDouble(),
-                          color: const Color(0xFF4CAF50),
+                          color: const Color(0xFF00C853),
                           borderRadius: const BorderRadius.vertical(
                             top: Radius.circular(4),
                           ),
@@ -404,7 +480,7 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen>
                       barRods: [
                         BarChartRodData(
                           toY: analysis.keywordDensityScore.toDouble(),
-                          color: const Color(0xFF4CAF50),
+                          color: const Color(0xFF00C853),
                           borderRadius: const BorderRadius.vertical(
                             top: Radius.circular(4),
                           ),
@@ -422,9 +498,22 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen>
   }
 
   Widget _buildScoresSection(AnalysisModel analysis, ThemeData theme) {
+    final isDark = theme.brightness == Brightness.dark;
+    final cardColor =
+        isDark ? const Color(0xFF1B5E20).withOpacity(0.3) : Colors.white;
+
     return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      elevation: 2,
+      color: cardColor,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(
+          color:
+              isDark
+                  ? const Color(0xFF00E676).withOpacity(0.5)
+                  : const Color(0xFF4CAF50).withOpacity(0.5),
+        ),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(8),
         child: GridView.count(
@@ -514,6 +603,14 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen>
   }
 
   Widget _buildFeedbackTab(AnalysisModel analysis, ThemeData theme) {
+    final isDark = theme.brightness == Brightness.dark;
+    final cardColor =
+        isDark ? const Color(0xFF1B5E20).withOpacity(0.3) : Colors.white;
+    final textColor =
+        isDark ? const Color(0xFFE0E0E0) : const Color(0xFF212121);
+    final secondaryTextColor =
+        isDark ? const Color(0xFFB0BEC5) : const Color(0xFF757575);
+
     final hasFeedback =
         analysis.generalSuggestions.isNotEmpty ||
         analysis.atsOptimizationTips.isNotEmpty ||
@@ -535,15 +632,23 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen>
                       ? _buildFeedbackSection(analysis, theme)
                       : Card(
                         elevation: 2,
+                        color: cardColor,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
+                          side: BorderSide(
+                            color:
+                                isDark
+                                    ? const Color(0xFF00E676).withOpacity(0.5)
+                                    : const Color(0xFF4CAF50).withOpacity(0.5),
+                          ),
                         ),
                         child: Padding(
                           padding: const EdgeInsets.all(16),
                           child: Text(
                             'No feedback available. Try re-analyzing or uploading a different resume.',
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
+                            style: TextStyle(
+                              color: secondaryTextColor,
+                              fontSize: 14,
                             ),
                             textAlign: TextAlign.center,
                           ),
@@ -558,14 +663,19 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen>
   }
 
   Widget _buildFeedbackSection(AnalysisModel analysis, ThemeData theme) {
+    final isDark = theme.brightness == Brightness.dark;
+    final textColor =
+        isDark ? const Color(0xFFE0E0E0) : const Color(0xFF212121);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           'Detailed Feedback',
-          style: theme.textTheme.headlineSmall?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: theme.colorScheme.onBackground,
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 18,
+            color: textColor,
           ),
         ),
         const SizedBox(height: 12),
@@ -576,7 +686,7 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen>
             child: FeedbackList(
               items: analysis.generalSuggestions,
               icon: Icons.lightbulb_outline,
-              color: theme.colorScheme.primary,
+              color: const Color(0xFF00C853),
             ),
           ),
         if (analysis.atsOptimizationTips.isNotEmpty)
@@ -586,7 +696,7 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen>
             child: FeedbackList(
               items: analysis.atsOptimizationTips,
               icon: Icons.lightbulb_outline,
-              color: theme.colorScheme.primary,
+              color: const Color(0xFF00C853),
             ),
           ),
         if (analysis.actionVerbSuggestions.isNotEmpty)
@@ -596,7 +706,7 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen>
             child: FeedbackList(
               items: analysis.actionVerbSuggestions,
               icon: Icons.arrow_forward,
-              color: theme.colorScheme.primary,
+              color: const Color(0xFF00C853),
             ),
           ),
         if (analysis.chronologyWarnings.isNotEmpty)
@@ -636,7 +746,7 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen>
             child: FeedbackList(
               items: analysis.atsOptimizationExamples,
               icon: Icons.lightbulb,
-              color: theme.colorScheme.primary,
+              color: const Color(0xFF00C853),
             ),
           ),
       ],
@@ -644,6 +754,12 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen>
   }
 
   Widget _buildSectionsTab(AnalysisModel analysis, ThemeData theme) {
+    final isDark = theme.brightness == Brightness.dark;
+    final cardColor =
+        isDark ? const Color(0xFF1B5E20).withOpacity(0.3) : Colors.white;
+    final secondaryTextColor =
+        isDark ? const Color(0xFFB0BEC5) : const Color(0xFF757575);
+
     return CustomScrollView(
       slivers: [
         SliverToBoxAdapter(
@@ -677,15 +793,23 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen>
                       )
                       : Card(
                         elevation: 2,
+                        color: cardColor,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
+                          side: BorderSide(
+                            color:
+                                isDark
+                                    ? const Color(0xFF00E676).withOpacity(0.5)
+                                    : const Color(0xFF4CAF50).withOpacity(0.5),
+                          ),
                         ),
                         child: Padding(
                           padding: const EdgeInsets.all(16),
                           child: Text(
                             'No section analysis available. Try re-analyzing or uploading a different resume.',
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
+                            style: TextStyle(
+                              color: secondaryTextColor,
+                              fontSize: 14,
                             ),
                             textAlign: TextAlign.center,
                           ),
@@ -700,6 +824,12 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen>
   }
 
   Widget _buildConfidenceTab(AnalysisModel analysis, ThemeData theme) {
+    final isDark = theme.brightness == Brightness.dark;
+    final cardColor =
+        isDark ? const Color(0xFF1B5E20).withOpacity(0.3) : Colors.white;
+    final textColor =
+        isDark ? const Color(0xFFE0E0E0) : const Color(0xFF212121);
+
     return CustomScrollView(
       slivers: [
         SliverToBoxAdapter(
@@ -720,9 +850,7 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen>
                     const SizedBox(height: 12),
                     Text(
                       'This analysis has a confidence score of ${analysis.confidenceScore}%, indicating the reliability of the results.',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onBackground,
-                      ),
+                      style: TextStyle(color: textColor, fontSize: 14),
                       textAlign: TextAlign.center,
                     ),
                   ],
@@ -737,13 +865,24 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen>
   }
 
   void _showImprovementDialog(BuildContext context, ResumeSection section) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final textColor =
+        isDark ? const Color(0xFFE0E0E0) : const Color(0xFF212121);
+    final secondaryTextColor =
+        isDark ? const Color(0xFFB0BEC5) : const Color(0xFF757575);
+    final accentColor =
+        isDark ? const Color(0xFF00E676) : const Color(0xFF4CAF50);
+
     showDialog(
       context: context,
       builder:
           (context) => Dialog(
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(12),
             ),
+            backgroundColor:
+                isDark ? const Color(0xFF121212) : const Color(0xFFE8F5E9),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 300),
               padding: const EdgeInsets.all(16),
@@ -754,24 +893,31 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen>
                   children: [
                     Text(
                       'Improve ${section.name}',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: const Color(0xFF4CAF50),
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 18,
+                        color: textColor,
                       ),
                     ),
                     const SizedBox(height: 16),
                     Text(
                       'Current Content:',
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                        color: textColor,
                       ),
                     ),
                     const SizedBox(height: 8),
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.surfaceContainer,
+                        color:
+                            isDark
+                                ? const Color(0xFF1B5E20).withOpacity(0.3)
+                                : Colors.white,
                         borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: accentColor.withOpacity(0.5)),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -786,19 +932,19 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen>
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
-                                        const Icon(
+                                        Icon(
                                           Icons.circle,
                                           size: 8,
-                                          color: Color(0xFF388E3C),
+                                          color: accentColor,
                                         ),
                                         const SizedBox(width: 8),
                                         Expanded(
                                           child: Text(
                                             item,
-                                            style:
-                                                Theme.of(
-                                                  context,
-                                                ).textTheme.bodyMedium,
+                                            style: TextStyle(
+                                              color: textColor,
+                                              fontSize: 14,
+                                            ),
                                           ),
                                         ),
                                       ],
@@ -812,8 +958,10 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen>
                     if (section.improvementExamples.isNotEmpty) ...[
                       Text(
                         'Improvement Examples:',
-                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        style: TextStyle(
                           fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                          color: textColor,
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -823,16 +971,15 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen>
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Icon(
-                                Icons.circle,
-                                size: 8,
-                                color: Color(0xFF388E3C),
-                              ),
+                              Icon(Icons.circle, size: 8, color: accentColor),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
                                   example,
-                                  style: Theme.of(context).textTheme.bodyMedium,
+                                  style: TextStyle(
+                                    color: textColor,
+                                    fontSize: 14,
+                                  ),
                                 ),
                               ),
                             ],
@@ -843,8 +990,10 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen>
                     ],
                     Text(
                       'Suggestions:',
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                        color: textColor,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -854,16 +1003,15 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen>
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Icon(
-                              Icons.circle,
-                              size: 8,
-                              color: Color(0xFF388E3C),
-                            ),
+                            Icon(Icons.circle, size: 8, color: accentColor),
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
                                 suggestion,
-                                style: Theme.of(context).textTheme.bodyMedium,
+                                style: TextStyle(
+                                  color: textColor,
+                                  fontSize: 14,
+                                ),
                               ),
                             ),
                           ],
@@ -876,8 +1024,11 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen>
                       child: TextButton(
                         onPressed: () => Navigator.pop(context),
                         style: TextButton.styleFrom(
-                          foregroundColor: const Color(0xFF4CAF50),
-                          backgroundColor: Colors.white,
+                          foregroundColor: accentColor,
+                          backgroundColor:
+                              isDark
+                                  ? const Color(0xFF1B5E20).withOpacity(0.3)
+                                  : Colors.white,
                           padding: const EdgeInsets.symmetric(
                             horizontal: 16,
                             vertical: 8,
@@ -886,7 +1037,10 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen>
                             borderRadius: BorderRadius.circular(8),
                           ),
                         ),
-                        child: const Text('Close'),
+                        child: Text(
+                          'Close',
+                          style: TextStyle(color: accentColor),
+                        ),
                       ),
                     ),
                   ],

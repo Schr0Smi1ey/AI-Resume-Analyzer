@@ -64,6 +64,7 @@ class _ResumePreviewScreenState extends State<ResumePreviewScreen> {
         _extractedText = 'Error processing file: ${e.toString()}';
         _isLoading = false;
       });
+      _showSnackBar('Error processing file: ${e.toString()}', isError: true);
     }
   }
 
@@ -139,6 +140,66 @@ class _ResumePreviewScreenState extends State<ResumePreviewScreen> {
     });
   }
 
+  void _showSnackBar(String message, {bool isError = false}) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final textColor =
+        isDark ? const Color(0xFFE0E0E0) : const Color(0xFF212121);
+    final backgroundColor =
+        isError
+            ? Colors.red.withOpacity(0.8)
+            : (isDark ? const Color(0xFF00E676) : const Color(0xFF4CAF50))
+                .withOpacity(0.8);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message, style: TextStyle(color: textColor)),
+        backgroundColor: backgroundColor,
+      ),
+    );
+  }
+
+  Widget _buildConfirmationDialog(
+    BuildContext context, {
+    required String title,
+    required String content,
+    bool showCopyButton = false,
+    String? textToCopy,
+  }) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final textColor =
+        isDark ? const Color(0xFFE0E0E0) : const Color(0xFF212121);
+    final accentColor =
+        isDark ? const Color(0xFF00E676) : const Color(0xFF4CAF50);
+
+    return AlertDialog(
+      title: Text(title, style: TextStyle(color: textColor)),
+      content: Text(
+        content,
+        style: TextStyle(color: textColor.withOpacity(0.8)),
+      ),
+      backgroundColor:
+          isDark ? const Color(0xFF121212) : const Color(0xFFE8F5E9),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text('Close', style: TextStyle(color: accentColor)),
+        ),
+        if (showCopyButton)
+          TextButton(
+            onPressed: () async {
+              await Clipboard.setData(ClipboardData(text: textToCopy ?? ''));
+              if (!mounted) return;
+              _showSnackBar('Copied to clipboard');
+              Navigator.pop(context);
+            },
+            child: Text('Copy', style: TextStyle(color: accentColor)),
+          ),
+      ],
+    );
+  }
+
   void _showExtractedText() {
     final displayedText =
         _extractedText
@@ -151,163 +212,144 @@ class _ResumePreviewScreenState extends State<ResumePreviewScreen> {
       context: context,
       builder:
           (context) => AlertDialog(
-            title: const Text('Extracted Text'),
-            content: SizedBox(
-              width: double.maxFinite,
+            title: Text(
+              'Extracted Text',
+              style: TextStyle(
+                color:
+                    Theme.of(context).brightness == Brightness.dark
+                        ? const Color(0xFFE0E0E0)
+                        : const Color(0xFF212121),
+                fontWeight: FontWeight.w600,
+                fontSize: 16,
+              ),
+            ),
+            content: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 800),
               child: SingleChildScrollView(
                 child: SelectableText(
                   displayedText,
-                  style: Theme.of(context).textTheme.bodyMedium,
+                  style: TextStyle(
+                    color:
+                        Theme.of(context).brightness == Brightness.dark
+                            ? const Color(0xFFE0E0E0).withOpacity(0.8)
+                            : const Color(0xFF212121).withOpacity(0.8),
+                    fontSize: 14,
+                  ),
                 ),
               ),
             ),
+            backgroundColor:
+                Theme.of(context).brightness == Brightness.dark
+                    ? const Color(0xFF121212)
+                    : const Color(0xFFE8F5E9),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('Close'),
+                child: Text(
+                  'Close',
+                  style: TextStyle(
+                    color:
+                        Theme.of(context).brightness == Brightness.dark
+                            ? const Color(0xFF00E676)
+                            : const Color(0xFF4CAF50),
+                  ),
+                ),
               ),
               TextButton(
                 onPressed: () async {
                   await Clipboard.setData(ClipboardData(text: displayedText));
                   if (!mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Copied to clipboard')),
-                  );
+                  _showSnackBar('Copied to clipboard');
                   Navigator.pop(context);
                 },
-                child: const Text('Copy'),
+                child: Text(
+                  'Copy',
+                  style: TextStyle(
+                    color:
+                        Theme.of(context).brightness == Brightness.dark
+                            ? const Color(0xFF00E676)
+                            : const Color(0xFF4CAF50),
+                  ),
+                ),
               ),
             ],
           ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(_fileName),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.text_snippet),
-            onPressed: _showExtractedText,
-            tooltip: 'Show extracted text',
-          ),
-          IconButton(
-            icon: const Icon(Icons.info_outline),
-            onPressed: _showFileInfo,
-            tooltip: 'File information',
-          ),
-        ],
-      ),
-      body:
-          _isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : Stack(
-                children: [
-                  Column(
-                    children: [
-                      Expanded(
-                        child:
-                            _filePath.endsWith('.pdf')
-                                ? SfPdfViewer.file(
-                                  File(_filePath),
-                                  controller: _pdfController,
-                                  initialZoomLevel: _zoomLevel,
-                                  enableDoubleTapZooming: true,
-                                  enableTextSelection: true,
-                                  canShowScrollHead: true,
-                                  canShowScrollStatus: true,
-                                  interactionMode: PdfInteractionMode.pan,
-                                )
-                                : Center(
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      const Icon(Icons.description, size: 64),
-                                      const SizedBox(height: 16),
-                                      Text(
-                                        'Preview not available for ${_filePath.split('.').last.toUpperCase()} files',
-                                        style:
-                                            Theme.of(
-                                              context,
-                                            ).textTheme.titleMedium,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                      ),
-                    ],
-                  ),
-                  if (_filePath.endsWith('.pdf'))
-                    Positioned(
-                      bottom: 80,
-                      right: 20,
-                      child: Column(
-                        children: [
-                          FloatingActionButton.small(
-                            heroTag: 'zoomIn',
-                            onPressed: _zoomIn,
-                            tooltip: 'Zoom in',
-                            child: const Icon(Icons.zoom_in),
-                          ),
-                          const SizedBox(height: 8),
-                          FloatingActionButton.small(
-                            heroTag: 'zoomOut',
-                            onPressed: _zoomOut,
-                            tooltip: 'Zoom out',
-                            child: const Icon(Icons.zoom_out),
-                          ),
-                          const SizedBox(height: 8),
-                          FloatingActionButton.small(
-                            heroTag: 'resetZoom',
-                            onPressed: _resetZoom,
-                            tooltip: 'Reset zoom',
-                            child: const Icon(Icons.fullscreen_exit),
-                          ),
-                        ],
-                      ),
-                    ),
-                ],
-              ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _analyzeResume,
-        label: const Text('Analyze with AI'),
-        icon: const Icon(Icons.auto_awesome),
-      ),
     );
   }
 
   void _showFileInfo() {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final textColor =
+        isDark ? const Color(0xFFE0E0E0) : const Color(0xFF212121);
+    final secondaryTextColor =
+        isDark ? const Color(0xFFB0BEC5) : const Color(0xFF757575);
+    final accentColor =
+        isDark ? const Color(0xFF00E676) : const Color(0xFF4CAF50);
+
     showDialog(
       context: context,
       builder:
           (context) => AlertDialog(
-            title: const Text('File Information'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildInfoRow('Name', _fileName),
-                _buildInfoRow('Type', _filePath.split('.').last.toUpperCase()),
-                _buildInfoRow(
-                  'Size',
-                  '${(_fileSize / 1024).toStringAsFixed(1)} KB',
-                ),
-                _buildInfoRow('Path', _filePath.split('/').last),
-              ],
+            title: Text(
+              'File Information',
+              style: TextStyle(
+                color: textColor,
+                fontWeight: FontWeight.w600,
+                fontSize: 16,
+              ),
             ),
+            content: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 300),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildInfoRow(
+                    'Name',
+                    _fileName,
+                    textColor,
+                    secondaryTextColor,
+                  ),
+                  _buildInfoRow(
+                    'Type',
+                    _filePath.split('.').last.toUpperCase(),
+                    textColor,
+                    secondaryTextColor,
+                  ),
+                  _buildInfoRow(
+                    'Size',
+                    '${(_fileSize / 1024).toStringAsFixed(1)} KB',
+                    textColor,
+                    secondaryTextColor,
+                  ),
+                  _buildInfoRow(
+                    'Path',
+                    _filePath.split('/').last,
+                    textColor,
+                    secondaryTextColor,
+                  ),
+                ],
+              ),
+            ),
+            backgroundColor:
+                isDark ? const Color(0xFF121212) : const Color(0xFFE8F5E9),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('Close'),
+                child: Text('Close', style: TextStyle(color: accentColor)),
               ),
             ],
           ),
     );
   }
 
-  Widget _buildInfoRow(String label, String value) {
+  Widget _buildInfoRow(
+    String label,
+    String value,
+    Color textColor,
+    Color secondaryTextColor,
+  ) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -317,12 +359,169 @@ class _ResumePreviewScreenState extends State<ResumePreviewScreen> {
             width: 60,
             child: Text(
               '$label:',
-              style: const TextStyle(fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: textColor,
+                fontSize: 14,
+              ),
             ),
           ),
           const SizedBox(width: 8),
-          Expanded(child: Text(value)),
+          Expanded(
+            child: Text(
+              value,
+              style: TextStyle(color: secondaryTextColor, fontSize: 14),
+            ),
+          ),
         ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    // Define theme-dependent colors
+    final primaryColor = const Color(0xFF00C853); // Motivating green
+    final accentColor =
+        isDark ? const Color(0xFF00E676) : const Color(0xFF4CAF50);
+    final backgroundColor =
+        isDark ? const Color(0xFF121212) : const Color(0xFFE8F5E9);
+    final textColor =
+        isDark ? const Color(0xFFE0E0E0) : const Color(0xFF212121);
+    final secondaryTextColor =
+        isDark ? const Color(0xFFB0BEC5) : const Color(0xFF757575);
+
+    return Scaffold(
+      backgroundColor: backgroundColor, // Explicitly set Scaffold background
+      appBar: AppBar(
+        title: Text(
+          _fileName,
+          style: TextStyle(
+            color: textColor,
+            fontWeight: FontWeight.w600,
+            fontSize: 16,
+          ),
+        ),
+        backgroundColor: backgroundColor,
+        actions: [
+          IconButton(
+            icon: Icon(Icons.text_snippet, color: accentColor),
+            onPressed: _showExtractedText,
+            tooltip: 'Show extracted text',
+          ),
+          IconButton(
+            icon: Icon(Icons.info_outline, color: accentColor),
+            onPressed: _showFileInfo,
+            tooltip: 'File information',
+          ),
+        ],
+      ),
+      body:
+          _isLoading
+              ? Container(
+                color: backgroundColor, // Ensure loading state background
+                child: Center(
+                  child: CircularProgressIndicator(color: primaryColor),
+                ),
+              )
+              : Container(
+                color: backgroundColor, // Ensure consistent background
+                child: Stack(
+                  children: [
+                    Column(
+                      children: [
+                        Expanded(
+                          child:
+                              _filePath.endsWith('.pdf')
+                                  ? Container(
+                                    color:
+                                        backgroundColor, // Background for PDF viewer
+                                    child: SfPdfViewer.file(
+                                      File(_filePath),
+                                      controller: _pdfController,
+                                      initialZoomLevel: _zoomLevel,
+                                      enableDoubleTapZooming: true,
+                                      enableTextSelection: true,
+                                      canShowScrollHead: true,
+                                      canShowScrollStatus: true,
+                                      interactionMode: PdfInteractionMode.pan,
+                                    ),
+                                  )
+                                  : Container(
+                                    color:
+                                        backgroundColor, // Background for non-PDF
+                                    child: Center(
+                                      child: Column(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Icon(
+                                            Icons.description,
+                                            size: 64,
+                                            color: accentColor,
+                                          ),
+                                          const SizedBox(height: 16),
+                                          Text(
+                                            'Preview not available for ${_filePath.split('.').last.toUpperCase()} files',
+                                            style: TextStyle(
+                                              color: textColor,
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                        ),
+                      ],
+                    ),
+                    if (_filePath.endsWith('.pdf'))
+                      Positioned(
+                        bottom: 80,
+                        right: 20,
+                        child: Column(
+                          children: [
+                            FloatingActionButton.small(
+                              heroTag: 'zoomIn',
+                              onPressed: _zoomIn,
+                              tooltip: 'Zoom in',
+                              backgroundColor: primaryColor,
+                              child: Icon(Icons.zoom_in, color: Colors.white),
+                            ),
+                            const SizedBox(height: 8),
+                            FloatingActionButton.small(
+                              heroTag: 'zoomOut',
+                              onPressed: _zoomOut,
+                              tooltip: 'Zoom out',
+                              backgroundColor: primaryColor,
+                              child: Icon(Icons.zoom_out, color: Colors.white),
+                            ),
+                            const SizedBox(height: 8),
+                            FloatingActionButton.small(
+                              heroTag: 'resetZoom',
+                              onPressed: _resetZoom,
+                              tooltip: 'Reset zoom',
+                              backgroundColor: primaryColor,
+                              child: Icon(
+                                Icons.fullscreen_exit,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _analyzeResume,
+        label: Text('Analyze with AI', style: TextStyle(color: Colors.white)),
+        icon: Icon(Icons.auto_awesome, color: Colors.white),
+        backgroundColor: primaryColor,
       ),
     );
   }

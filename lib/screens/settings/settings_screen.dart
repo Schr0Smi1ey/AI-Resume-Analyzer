@@ -27,11 +27,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _showSnackBar(String message, {bool isError = false}) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final textColor =
+        isDark ? const Color(0xFFE0E0E0) : const Color(0xFF212121);
+    final backgroundColor =
+        isError
+            ? Colors.red.withOpacity(0.8)
+            : const Color(0xFF00C853).withOpacity(0.8);
+
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message),
-        backgroundColor: isError ? Colors.red : Colors.green,
+        content: Text(message, style: TextStyle(color: textColor)),
+        backgroundColor: backgroundColor,
         duration: const Duration(seconds: 3),
       ),
     );
@@ -88,6 +97,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _showChangePasswordDialog() {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final textColor =
+        isDark ? const Color(0xFFE0E0E0) : const Color(0xFF212121);
+    final accentColor =
+        isDark ? const Color(0xFF00E676) : const Color(0xFF4CAF50);
+    final backgroundColor =
+        isDark ? const Color(0xFF121212) : const Color(0xFFE8F5E9);
+
     bool obscurePassword = true;
     bool obscureConfirmPassword = true;
 
@@ -97,7 +115,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
           (dialogContext) => StatefulBuilder(
             builder:
                 (dialogContext, setDialogState) => AlertDialog(
-                  title: const Text('Change Password'),
+                  title: Text(
+                    'Change Password',
+                    style: TextStyle(color: textColor),
+                  ),
+                  backgroundColor: backgroundColor,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -107,14 +129,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       TextField(
                         controller: _passwordController,
                         obscureText: obscurePassword,
+                        style: TextStyle(color: textColor),
                         decoration: InputDecoration(
                           labelText: 'New Password',
-                          border: const OutlineInputBorder(),
+                          labelStyle: TextStyle(
+                            color: textColor.withOpacity(0.8),
+                          ),
+                          border: OutlineInputBorder(
+                            borderSide: BorderSide(
+                              color: accentColor.withOpacity(0.5),
+                            ),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderSide: BorderSide(
+                              color: accentColor.withOpacity(0.5),
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderSide: BorderSide(color: accentColor),
+                          ),
                           suffixIcon: IconButton(
                             icon: Icon(
                               obscurePassword
                                   ? Icons.visibility_off
                                   : Icons.visibility,
+                              color: textColor.withOpacity(0.6),
                               semanticLabel:
                                   obscurePassword
                                       ? 'Show password'
@@ -132,14 +171,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       TextField(
                         controller: _confirmPasswordController,
                         obscureText: obscureConfirmPassword,
+                        style: TextStyle(color: textColor),
                         decoration: InputDecoration(
                           labelText: 'Confirm Password',
-                          border: const OutlineInputBorder(),
+                          labelStyle: TextStyle(
+                            color: textColor.withOpacity(0.8),
+                          ),
+                          border: OutlineInputBorder(
+                            borderSide: BorderSide(
+                              color: accentColor.withOpacity(0.5),
+                            ),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderSide: BorderSide(
+                              color: accentColor.withOpacity(0.5),
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderSide: BorderSide(color: accentColor),
+                          ),
                           suffixIcon: IconButton(
                             icon: Icon(
                               obscureConfirmPassword
                                   ? Icons.visibility_off
                                   : Icons.visibility,
+                              color: textColor.withOpacity(0.6),
                               semanticLabel:
                                   obscureConfirmPassword
                                       ? 'Show confirm password'
@@ -159,11 +215,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   actions: [
                     TextButton(
                       onPressed: () => Navigator.pop(dialogContext),
-                      child: const Text('Cancel'),
+                      child: Text(
+                        'Cancel',
+                        style: TextStyle(color: accentColor),
+                      ),
                     ),
                     TextButton(
                       onPressed: _changePassword,
-                      child: const Text('Update'),
+                      child: Text(
+                        'Update',
+                        style: TextStyle(color: accentColor),
+                      ),
                     ),
                   ],
                 ),
@@ -172,20 +234,41 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _showChangeNameDialog() {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final textColor =
+        isDark ? const Color(0xFFE0E0E0) : const Color(0xFF212121);
+    final accentColor =
+        isDark ? const Color(0xFF00E676) : const Color(0xFF4CAF50);
+    final backgroundColor =
+        isDark ? const Color(0xFF121212) : const Color(0xFFE8F5E9);
+
     showDialog(
       context: context,
       builder:
           (dialogContext) => AlertDialog(
-            title: const Text('Change Name'),
+            title: Text('Change Name', style: TextStyle(color: textColor)),
+            backgroundColor: backgroundColor,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),
             content: TextField(
               controller: _nameController,
-              decoration: const InputDecoration(
+              style: TextStyle(color: textColor),
+              decoration: InputDecoration(
                 labelText: 'New Name',
-                border: OutlineInputBorder(),
+                labelStyle: TextStyle(color: textColor.withOpacity(0.8)),
                 hintText: 'Enter your name',
+                hintStyle: TextStyle(color: textColor.withOpacity(0.6)),
+                border: OutlineInputBorder(
+                  borderSide: BorderSide(color: accentColor.withOpacity(0.5)),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: accentColor.withOpacity(0.5)),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: accentColor),
+                ),
               ),
               textInputAction: TextInputAction.done,
               keyboardType: TextInputType.name,
@@ -194,9 +277,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(dialogContext),
-                child: const Text('Cancel'),
+                child: Text('Cancel', style: TextStyle(color: accentColor)),
               ),
-              TextButton(onPressed: _changeName, child: const Text('Update')),
+              TextButton(
+                onPressed: _changeName,
+                child: Text('Update', style: TextStyle(color: accentColor)),
+              ),
             ],
           ),
     );
@@ -205,21 +291,40 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final primaryColor = const Color(0xFF00C853);
+    final accentColor =
+        isDark ? const Color(0xFF00E676) : const Color(0xFF4CAF50);
+    final backgroundColor =
+        isDark ? const Color(0xFF121212) : const Color(0xFFE8F5E9);
+    final textColor =
+        isDark ? const Color(0xFFE0E0E0) : const Color(0xFF212121);
+    final secondaryTextColor =
+        isDark ? const Color(0xFFB0BEC5) : const Color(0xFF757575);
+
     final themeProvider = Provider.of<ThemeProvider>(context);
     final authService = Provider.of<AuthService>(context);
     final user = authService.currentUser;
 
     return Scaffold(
+      backgroundColor: backgroundColor,
       appBar: AppBar(
-        title: const Text('Settings'),
-        backgroundColor: theme.appBarTheme.backgroundColor,
+        title: Text('Settings', style: TextStyle(color: textColor)),
+        backgroundColor: backgroundColor,
+        elevation: 0,
+        iconTheme: IconThemeData(color: textColor),
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
           Card(
-            elevation: theme.cardTheme.elevation,
-            shape: theme.cardTheme.shape,
+            elevation: 2,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(color: accentColor.withOpacity(0.3)),
+            ),
+            color:
+                isDark ? Colors.grey.shade900.withOpacity(0.5) : Colors.white,
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -227,64 +332,54 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 children: [
                   Text(
                     'Account',
-                    style: theme.textTheme.titleLarge?.copyWith(
+                    style: TextStyle(
+                      fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: theme.colorScheme.onSurface,
+                      color: textColor,
                     ),
                   ),
                   const SizedBox(height: 16),
                   ListTile(
-                    leading: const Icon(
-                      Icons.person,
-                      semanticLabel: 'Change name',
-                    ),
+                    leading: Icon(Icons.person, color: accentColor),
                     trailing:
                         user != null
-                            ? const Icon(
-                              Icons.edit,
-                              size: 20,
-                              semanticLabel: 'Edit name',
-                            )
+                            ? Icon(Icons.edit, size: 20, color: accentColor)
                             : null,
-                    title: const Text('Change Name'),
+                    title: Text(
+                      'Change Name',
+                      style: TextStyle(color: textColor),
+                    ),
                     subtitle: Text(
                       user?.displayName ?? 'Not set',
                       style: TextStyle(
                         color:
                             user?.displayName != null
-                                ? theme.colorScheme.onSurface
-                                : theme.colorScheme.onSurface.withOpacity(0.6),
+                                ? textColor
+                                : secondaryTextColor,
                       ),
                     ),
                     onTap: user != null ? _showChangeNameDialog : null,
                     enabled: user != null,
                   ),
                   ListTile(
-                    leading: const Icon(
-                      Icons.email,
-                      semanticLabel: 'User email',
+                    leading: Icon(Icons.email, color: accentColor),
+                    title: Text('Email', style: TextStyle(color: textColor)),
+                    subtitle: Text(
+                      user?.email ?? 'Not signed in',
+                      style: TextStyle(color: secondaryTextColor),
                     ),
-                    title: const Text(
-                      'Email',
-                      semanticsLabel: 'User email address',
-                    ),
-                    subtitle: Text(user?.email ?? 'Not signed in'),
                     enabled: false,
                   ),
                   ListTile(
-                    leading: const Icon(
-                      Icons.lock,
-                      semanticLabel: 'Change password',
-                    ),
+                    leading: Icon(Icons.lock, color: accentColor),
                     trailing:
                         user != null
-                            ? const Icon(
-                              Icons.edit,
-                              size: 20,
-                              semanticLabel: 'Edit password',
-                            )
+                            ? Icon(Icons.edit, size: 20, color: accentColor)
                             : null,
-                    title: const Text('Change Password'),
+                    title: Text(
+                      'Change Password',
+                      style: TextStyle(color: textColor),
+                    ),
                     onTap: user != null ? _showChangePasswordDialog : null,
                     enabled: user != null,
                   ),
@@ -294,8 +389,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           const SizedBox(height: 16),
           Card(
-            elevation: theme.cardTheme.elevation,
-            shape: theme.cardTheme.shape,
+            elevation: 2,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(color: accentColor.withOpacity(0.3)),
+            ),
+            color:
+                isDark ? Colors.grey.shade900.withOpacity(0.5) : Colors.white,
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -303,19 +403,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 children: [
                   Text(
                     'App Settings',
-                    style: theme.textTheme.titleLarge?.copyWith(
+                    style: TextStyle(
+                      fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: theme.colorScheme.onSurface,
+                      color: textColor,
                     ),
                   ),
                   const SizedBox(height: 16),
                   SwitchListTile(
-                    secondary: const Icon(
-                      Icons.dark_mode,
-                      semanticLabel: 'Dark mode toggle',
+                    secondary: Icon(Icons.dark_mode, color: accentColor),
+                    title: Text(
+                      'Dark Mode',
+                      style: TextStyle(color: textColor),
                     ),
-                    title: const Text('Dark Mode'),
                     value: themeProvider.themeMode == ThemeMode.dark,
+                    activeColor: accentColor,
                     onChanged: (value) {
                       themeProvider.toggleTheme(value);
                     },
@@ -326,11 +428,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           const SizedBox(height: 16),
           Card(
-            elevation: theme.cardTheme.elevation,
-            shape: theme.cardTheme.shape,
+            elevation: 2,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(color: accentColor.withOpacity(0.3)),
+            ),
+            color:
+                isDark ? Colors.grey.shade900.withOpacity(0.5) : Colors.white,
             child: ListTile(
-              leading: const Icon(Icons.logout, semanticLabel: 'Sign out'),
-              title: const Text('Sign Out'),
+              leading: Icon(Icons.logout, color: Colors.red.shade300),
+              title: Text(
+                'Sign Out',
+                style: TextStyle(color: Colors.red.shade300),
+              ),
               onTap: () async {
                 await Provider.of<AuthService>(
                   context,

@@ -18,30 +18,29 @@ class ScoreCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final gaugeSize = compact ? 60.0 : 80.0;
-    final fontSize = compact ? 10.0 : 12.0;
+    final gaugeSize = compact ? 80.0 : 100.0;
+    final fontSize = compact ? 14.0 : 16.0;
 
     return FadeInUp(
       duration: const Duration(milliseconds: 500),
       child: Card(
-        elevation: 6,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        shadowColor: Colors.black26,
+        elevation: 4,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        margin: const EdgeInsets.all(8),
         clipBehavior: Clip.hardEdge,
         child: Container(
+          height: 220, // ✅ reduce height
           decoration: BoxDecoration(
             gradient: const LinearGradient(
               colors: [Color(0xFF4CAF50), Color(0xFF009688)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(16),
           ),
           child: Padding(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Column(
-              mainAxisSize: MainAxisSize.min,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 SizedBox(
@@ -56,25 +55,26 @@ class ScoreCard extends StatelessWidget {
                         showTicks: false,
                         startAngle: 270,
                         endAngle: 270,
-                        radiusFactor: 0.8,
+                        radiusFactor: 1,
                         axisLineStyle: AxisLineStyle(
-                          thickness: 0.1,
+                          thickness: 0.12,
                           thicknessUnit: GaugeSizeUnit.factor,
                           color: Colors.white.withOpacity(0.2),
                         ),
                         pointers: [
                           RangePointer(
                             value: score.toDouble(),
-                            width: 0.2,
+                            width: 0.12,
                             sizeUnit: GaugeSizeUnit.factor,
                             color: Colors.white,
                             enableAnimation: true,
-                            animationDuration: 1200,
-                            animationType: AnimationType.ease,
+                            animationDuration: 1000,
                           ),
                         ],
                         annotations: [
                           GaugeAnnotation(
+                            angle: 90,
+                            positionFactor: 0.0, // ✅ perfectly center the text
                             widget: Text(
                               '$score%',
                               style: TextStyle(
@@ -83,15 +83,13 @@ class ScoreCard extends StatelessWidget {
                                 color: Colors.white,
                               ),
                             ),
-                            angle: 90,
-                            positionFactor: 0.45,
                           ),
                         ],
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 10),
                 Text(
                   label,
                   style: TextStyle(
@@ -109,8 +107,6 @@ class ScoreCard extends StatelessWidget {
                     color: Colors.white70,
                   ),
                   textAlign: TextAlign.center,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
