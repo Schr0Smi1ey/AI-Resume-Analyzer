@@ -117,6 +117,7 @@ You are an AI-powered resume analyzer with expertise in ATS optimization, job ma
       "suggestions": ["string"],
       "improvementExamples": ["string"]
     }
+    // Repeat for each section present or expected
   ],
   "confidenceScore": integer,
   "rawResponse": "string",
