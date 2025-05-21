@@ -1,17 +1,10 @@
 import 'package:flutter/material.dart';
-<<<<<<< HEAD
 import 'package:provider/provider.dart';
 import '../../services/auth_service.dart';
 import '../history/history_screen.dart';
 import '../settings/settings_screen.dart';
 import '../login/login_screen.dart';
 import './widgets/home_screen.dart'; // Assumed path
-=======
-import '../history/history_screen.dart';
-import '../settings/settings_screen.dart';
-import "../login/login_screen.dart";
-import './widgets/home_screen.dart';
->>>>>>> 4fa26bbdaa87cc69a5d317773c659969cf7cd551
 
 class DashboardScreen extends StatefulWidget {
   static const routeName = '/dashboard';
@@ -39,12 +32,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-<<<<<<< HEAD
     final authService = Provider.of<AuthService>(context);
     final userName = authService.currentUser?.displayName ?? 'User';
 
-=======
->>>>>>> 4fa26bbdaa87cc69a5d317773c659969cf7cd551
     return Scaffold(
       key: _scaffoldKey,
       appBar: AppBar(
@@ -54,11 +44,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           onPressed: () => _scaffoldKey.currentState?.openDrawer(),
         ),
       ),
-<<<<<<< HEAD
       drawer: _buildDrawer(context, userName),
-=======
-      drawer: _buildDrawer(context),
->>>>>>> 4fa26bbdaa87cc69a5d317773c659969cf7cd551
       body: PageStorage(
         bucket: PageStorageBucket(),
         child: _widgetOptions.elementAt(_selectedIndex),
@@ -78,11 +64,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-<<<<<<< HEAD
   Drawer _buildDrawer(BuildContext context, String userName) {
-=======
-  Drawer _buildDrawer(BuildContext context) {
->>>>>>> 4fa26bbdaa87cc69a5d317773c659969cf7cd551
     return Drawer(
       child: ListView(
         padding: EdgeInsets.zero,
@@ -98,11 +80,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
                 const SizedBox(height: 10),
                 Text(
-<<<<<<< HEAD
                   'Welcome, $userName!',
-=======
-                  'Welcome, User!',
->>>>>>> 4fa26bbdaa87cc69a5d317773c659969cf7cd551
                   style: Theme.of(
                     context,
                   ).textTheme.titleLarge?.copyWith(color: Colors.white),

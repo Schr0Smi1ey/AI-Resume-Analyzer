@@ -10,23 +10,16 @@ import 'screens/dashboard/dashboard_screen.dart';
 import 'screens/settings/settings_screen.dart';
 import 'screens/resume_analysis/resume_preview_screen.dart';
 import 'screens/resume_analysis/resume_analysis_screen.dart';
-<<<<<<< HEAD
 import 'screens/history/history_screen.dart';
 import 'services/theme_provider.dart';
 import 'services/api_service.dart';
 import 'services/auth_service.dart';
 import 'services/history_service.dart';
-=======
-import 'services/theme_provider.dart';
-import 'services/api_service.dart';
-import 'services/auth_service.dart';
->>>>>>> 4fa26bbdaa87cc69a5d317773c659969cf7cd551
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Load environment variables
-<<<<<<< HEAD
   try {
     await dotenv.load(fileName: ".env");
     print('Environment variables loaded successfully');
@@ -47,28 +40,13 @@ void main() async {
 
   // Set preferred orientations
   await SystemChrome.setPreferredOrientations([
-=======
-  await dotenv.load(fileName: ".env");
-
-  // Initialize Firebase
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-
-  // For desktop window management
-  SystemChrome.setPreferredOrientations([
->>>>>>> 4fa26bbdaa87cc69a5d317773c659969cf7cd551
     DeviceOrientation.landscapeRight,
     DeviceOrientation.landscapeLeft,
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
-<<<<<<< HEAD
   ]);
 
   runApp(const AIResumeAnalyzerApp());
-=======
-  ]).then((_) {
-    runApp(const AIResumeAnalyzerApp());
-  });
->>>>>>> 4fa26bbdaa87cc69a5d317773c659969cf7cd551
 }
 
 class AIResumeAnalyzerApp extends StatelessWidget {
@@ -79,15 +57,10 @@ class AIResumeAnalyzerApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (context) => ThemeProvider()),
-<<<<<<< HEAD
         Provider(create: (context) => ApiService()),
         ChangeNotifierProvider(create: (context) => ApiService()),
         Provider(create: (context) => AuthService()),
         Provider(create: (context) => HistoryService()),
-=======
-        ChangeNotifierProvider(create: (context) => ApiService()),
-        Provider(create: (context) => AuthService()),
->>>>>>> 4fa26bbdaa87cc69a5d317773c659969cf7cd551
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {
@@ -102,7 +75,6 @@ class AIResumeAnalyzerApp extends StatelessWidget {
               LoginScreen.routeName: (context) => const LoginScreen(),
               SignupScreen.routeName: (context) => const SignupScreen(),
               DashboardScreen.routeName: (context) => const DashboardScreen(),
-<<<<<<< HEAD
               SettingsScreen.routeName: (context) => const SettingsScreen(),
               HistoryScreen.routeName: (context) => const HistoryScreen(),
               ResumePreviewScreen.routeName:
@@ -116,20 +88,6 @@ class AIResumeAnalyzerApp extends StatelessWidget {
                         (ModalRoute.of(context)?.settings.arguments
                             as Map<String, dynamic>)['preloadedAnalysis'],
                   ),
-=======
-              ResumePreviewScreen.routeName:
-                  (context) => const ResumePreviewScreen(),
-              '/settings': (context) => const SettingsScreen(),
-            },
-            onGenerateRoute: (settings) {
-              if (settings.name == ResumeAnalysisScreen.routeName) {
-                final args = settings.arguments as Map<String, dynamic>;
-                return MaterialPageRoute(
-                  builder: (context) => ResumeAnalysisScreen(args: args),
-                );
-              }
-              return null;
->>>>>>> 4fa26bbdaa87cc69a5d317773c659969cf7cd551
             },
           );
         },
@@ -162,19 +120,15 @@ class AIResumeAnalyzerApp extends StatelessWidget {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
       ),
-<<<<<<< HEAD
       cardTheme: CardTheme(
         elevation: 4,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
-=======
->>>>>>> 4fa26bbdaa87cc69a5d317773c659969cf7cd551
     );
   }
 
   ThemeData _buildDarkThemeData() {
     return ThemeData.dark().copyWith(
-<<<<<<< HEAD
       appBarTheme: const AppBarTheme(
         elevation: 0,
         centerTitle: true,
@@ -183,11 +137,6 @@ class AIResumeAnalyzerApp extends StatelessWidget {
       inputDecorationTheme: const InputDecorationTheme(
         border: OutlineInputBorder(),
         contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-=======
-      appBarTheme: const AppBarTheme(elevation: 0, centerTitle: true),
-      inputDecorationTheme: const InputDecorationTheme(
-        border: OutlineInputBorder(),
->>>>>>> 4fa26bbdaa87cc69a5d317773c659969cf7cd551
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
@@ -195,13 +144,10 @@ class AIResumeAnalyzerApp extends StatelessWidget {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
       ),
-<<<<<<< HEAD
       cardTheme: CardTheme(
         elevation: 4,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
-=======
->>>>>>> 4fa26bbdaa87cc69a5d317773c659969cf7cd551
     );
   }
 }

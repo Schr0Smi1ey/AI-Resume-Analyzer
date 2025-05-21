@@ -275,13 +275,10 @@ Resume Content: ${resumeText.trim().isEmpty ? 'Not provided. Assume mid-level so
     _lastCleanedResponse = null;
     notifyListeners();
   }
-<<<<<<< HEAD
 
   @override
   void dispose() {
     // Clean up any resources
     super.dispose();
   }
-=======
->>>>>>> 4fa26bbdaa87cc69a5d317773c659969cf7cd551
 }
