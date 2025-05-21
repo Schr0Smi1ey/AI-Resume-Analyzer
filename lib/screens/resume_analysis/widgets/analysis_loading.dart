@@ -14,17 +14,20 @@ class AnalysisLoading extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           FadeIn(
+            duration: const Duration(milliseconds: 600),
             child: SpinKitFadingCircle(
-              color: theme.colorScheme.primary,
+              color: const Color(0xFF4CAF50),
               size: 50,
             ),
           ),
           const SizedBox(height: 16),
           FadeInUp(
+            duration: const Duration(milliseconds: 600),
             child: Text(
               'Analyzing your resume...',
               style: theme.textTheme.titleMedium?.copyWith(
-                color: theme.colorScheme.onBackground,
+                color: const Color(0xFF4CAF50),
+                fontWeight: FontWeight.bold,
               ),
             ),
           ),

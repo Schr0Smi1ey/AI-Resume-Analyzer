@@ -20,16 +20,14 @@ class FeedbackCard extends StatelessWidget {
     final theme = Theme.of(context);
 
     return FadeInUp(
+      duration: const Duration(milliseconds: 500),
       child: Card(
-        elevation: 4,
+        elevation: 6,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         child: Container(
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                theme.colorScheme.primaryContainer.withOpacity(0.1),
-                theme.colorScheme.primaryContainer.withOpacity(0.3),
-              ],
+            gradient: const LinearGradient(
+              colors: [Color(0xFF4CAF50), Color(0xFF009688)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
@@ -42,11 +40,23 @@ class FeedbackCard extends StatelessWidget {
                       title,
                       style: theme.textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
+                        color: Colors.white,
                       ),
                     ),
                     initiallyExpanded: initiallyExpanded,
+                    iconColor: Colors.white,
+                    collapsedIconColor: Colors.white70,
                     children: [
-                      Padding(padding: const EdgeInsets.all(16), child: child),
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.surface,
+                          borderRadius: const BorderRadius.vertical(
+                            bottom: Radius.circular(16),
+                          ),
+                        ),
+                        child: child,
+                      ),
                     ],
                   )
                   : Padding(
@@ -58,6 +68,7 @@ class FeedbackCard extends StatelessWidget {
                           title,
                           style: theme.textTheme.titleLarge?.copyWith(
                             fontWeight: FontWeight.bold,
+                            color: Colors.white,
                           ),
                         ),
                         const SizedBox(height: 12),

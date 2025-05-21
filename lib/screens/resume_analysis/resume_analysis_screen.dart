@@ -24,22 +24,28 @@ class ResumeAnalysisScreen extends StatefulWidget {
 }
 
 class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late Future<AnalysisModel> _analysisFuture;
-  late TabController _tabController;
+  late final TabController _tabController;
+  late final AnimationController _fabAnimationController;
   final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
+    _fabAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 200),
+      vsync: this,
+    )..forward();
     _startAnalysis();
   }
 
   @override
   void dispose() {
-    _scrollController.dispose();
     _tabController.dispose();
+    _fabAnimationController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -82,15 +88,20 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen>
             onPressed: _startAnalysis,
             tooltip: 'Re-analyze Resume',
             color: Colors.white,
+            hoverColor: Colors.white24,
           ),
         ],
-        elevation: 2,
+        elevation: 4,
+        shadowColor: Colors.black45,
         bottom: TabBar(
           controller: _tabController,
           labelColor: Colors.white,
           unselectedLabelColor: Colors.white70,
           indicatorColor: Colors.white,
           indicatorWeight: 3,
+          labelStyle: theme.textTheme.bodyMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
           tabs: const [
             Tab(text: 'Scores'),
             Tab(text: 'Feedback'),
@@ -99,11 +110,20 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen>
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _startAnalysis,
-        backgroundColor: const Color(0xFF4CAF50),
-        tooltip: 'Re-analyze',
-        child: const Icon(Icons.refresh, color: Colors.white),
+      floatingActionButton: ScaleTransition(
+        scale: Tween<double>(begin: 1.0, end: 1.2).animate(
+          CurvedAnimation(
+            parent: _fabAnimationController,
+            curve: Curves.easeInOut,
+          ),
+        ),
+        child: FloatingActionButton(
+          onPressed: _startAnalysis,
+          backgroundColor: const Color(0xFF4CAF50),
+          tooltip: 'Re-analyze',
+          hoverColor: const Color(0xFF388E3C),
+          child: const Icon(Icons.refresh, color: Colors.white),
+        ),
       ),
       body: FutureBuilder<AnalysisModel>(
         future: _analysisFuture,
@@ -138,7 +158,8 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen>
 
     if (!snapshot.hasData) {
       return AnalysisError(
-        message: 'No analysis data available',
+        message:
+            'No analysis data available. Please re-analyze or upload a resume.',
         onRetry: _startAnalysis,
       );
     }
@@ -146,6 +167,7 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen>
     final analysis = snapshot.data!;
     return TabBarView(
       controller: _tabController,
+      physics: const BouncingScrollPhysics(),
       children: [
         _buildScoresTab(analysis, theme),
         _buildFeedbackTab(analysis, theme),
@@ -156,44 +178,44 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen>
   }
 
   Widget _buildScoresTab(AnalysisModel analysis, ThemeData theme) {
-    return RefreshIndicator(
-      onRefresh: _startAnalysis,
-      color: theme.colorScheme.primary,
-      child: CustomScrollView(
-        controller: _scrollController,
-        slivers: [
-          SliverToBoxAdapter(
-            child: FadeInUp(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
+    return CustomScrollView(
+      controller: _scrollController,
+      slivers: [
+        SliverToBoxAdapter(
+          child: FadeInUp(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Card(
+                elevation: 6,
+                shadowColor: Colors.black26,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 child: AnalysisHeader(analysis: analysis),
               ),
             ),
           ),
-          SliverToBoxAdapter(
-            child: FadeInUp(
-              delay: const Duration(milliseconds: 100),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                child: _buildScoresChart(analysis, theme),
-              ),
+        ),
+        SliverToBoxAdapter(
+          child: FadeInUp(
+            delay: const Duration(milliseconds: 100),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: _buildScoresChart(analysis, theme),
             ),
           ),
-          SliverToBoxAdapter(
-            child: FadeInUp(
-              delay: const Duration(milliseconds: 200),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: _buildScoresSection(analysis, theme),
-              ),
+        ),
+        SliverToBoxAdapter(
+          child: FadeInUp(
+            delay: const Duration(milliseconds: 200),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: _buildScoresSection(analysis, theme),
             ),
           ),
-          const SliverToBoxAdapter(child: SizedBox(height: 80)),
-        ],
-      ),
+        ),
+        const SliverToBoxAdapter(child: SizedBox(height: 80)),
+      ],
     );
   }
 
@@ -231,7 +253,9 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen>
                         getTitlesWidget: (value, meta) {
                           return Text(
                             '${value.toInt()}%',
-                            style: theme.textTheme.bodySmall,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
                           );
                         },
                       ),
@@ -252,7 +276,9 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen>
                           ];
                           return Text(
                             labels[value.toInt()],
-                            style: theme.textTheme.bodySmall,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
                           );
                         },
                       ),
@@ -271,6 +297,9 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen>
                         BarChartRodData(
                           toY: analysis.atsScore.toDouble(),
                           color: const Color(0xFF4CAF50),
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(4),
+                          ),
                         ),
                       ],
                     ),
@@ -280,6 +309,9 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen>
                         BarChartRodData(
                           toY: analysis.grammarScore.toDouble(),
                           color: const Color(0xFF4CAF50),
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(4),
+                          ),
                         ),
                       ],
                     ),
@@ -289,6 +321,9 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen>
                         BarChartRodData(
                           toY: analysis.readabilityScore.toDouble(),
                           color: const Color(0xFF4CAF50),
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(4),
+                          ),
                         ),
                       ],
                     ),
@@ -298,6 +333,9 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen>
                         BarChartRodData(
                           toY: analysis.verbQualityScore.toDouble(),
                           color: const Color(0xFF4CAF50),
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(4),
+                          ),
                         ),
                       ],
                     ),
@@ -307,6 +345,9 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen>
                         BarChartRodData(
                           toY: analysis.formatScore.toDouble(),
                           color: const Color(0xFF4CAF50),
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(4),
+                          ),
                         ),
                       ],
                     ),
@@ -316,6 +357,9 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen>
                         BarChartRodData(
                           toY: analysis.jobMatchScore.toDouble(),
                           color: const Color(0xFF4CAF50),
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(4),
+                          ),
                         ),
                       ],
                     ),
@@ -323,8 +367,11 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen>
                       x: 6,
                       barRods: [
                         BarChartRodData(
-                          toY: (analysis.coherenceScore ?? 0).toDouble(),
+                          toY: analysis.coherenceScore.toDouble(),
                           color: const Color(0xFF4CAF50),
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(4),
+                          ),
                         ),
                       ],
                     ),
@@ -332,8 +379,11 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen>
                       x: 7,
                       barRods: [
                         BarChartRodData(
-                          toY: (analysis.keywordDensityScore ?? 0).toDouble(),
+                          toY: analysis.keywordDensityScore.toDouble(),
                           color: const Color(0xFF4CAF50),
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(4),
+                          ),
                         ),
                       ],
                     ),
@@ -357,14 +407,14 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen>
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           crossAxisCount: MediaQuery.of(context).size.width > 600 ? 4 : 2,
-          crossAxisSpacing: 4,
-          mainAxisSpacing: 4,
-          childAspectRatio: 0.7,
+          crossAxisSpacing: 8,
+          mainAxisSpacing: 8,
+          childAspectRatio: 0.75,
           children: [
             ZoomIn(
               delay: const Duration(milliseconds: 100),
               duration: const Duration(milliseconds: 500),
-              child: ScoreRadialCard(
+              child: ScoreCard(
                 score: analysis.atsScore,
                 label: 'ATS',
                 description: 'Compatibility with tracking systems',
@@ -373,7 +423,7 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen>
             ZoomIn(
               delay: const Duration(milliseconds: 150),
               duration: const Duration(milliseconds: 500),
-              child: ScoreRadialCard(
+              child: ScoreCard(
                 score: analysis.grammarScore,
                 label: 'Grammar',
                 description: 'Spelling and grammar quality',
@@ -382,7 +432,7 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen>
             ZoomIn(
               delay: const Duration(milliseconds: 200),
               duration: const Duration(milliseconds: 500),
-              child: ScoreRadialCard(
+              child: ScoreCard(
                 score: analysis.readabilityScore,
                 label: 'Readability',
                 description: 'Ease of understanding',
@@ -391,7 +441,7 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen>
             ZoomIn(
               delay: const Duration(milliseconds: 250),
               duration: const Duration(milliseconds: 500),
-              child: ScoreRadialCard(
+              child: ScoreCard(
                 score: analysis.verbQualityScore,
                 label: 'Action Verbs',
                 description: 'Strength of action verbs',
@@ -400,7 +450,7 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen>
             ZoomIn(
               delay: const Duration(milliseconds: 300),
               duration: const Duration(milliseconds: 500),
-              child: ScoreRadialCard(
+              child: ScoreCard(
                 score: analysis.formatScore,
                 label: 'Formatting',
                 description: 'Visual structure quality',
@@ -409,7 +459,7 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen>
             ZoomIn(
               delay: const Duration(milliseconds: 350),
               duration: const Duration(milliseconds: 500),
-              child: ScoreRadialCard(
+              child: ScoreCard(
                 score: analysis.jobMatchScore,
                 label: 'Job Match',
                 description: 'Relevance to position',
@@ -418,8 +468,8 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen>
             ZoomIn(
               delay: const Duration(milliseconds: 400),
               duration: const Duration(milliseconds: 500),
-              child: ScoreRadialCard(
-                score: analysis.coherenceScore ?? 0,
+              child: ScoreCard(
+                score: analysis.coherenceScore,
                 label: 'Coherence',
                 description: 'Logical flow and consistency',
               ),
@@ -427,8 +477,8 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen>
             ZoomIn(
               delay: const Duration(milliseconds: 450),
               duration: const Duration(milliseconds: 500),
-              child: ScoreRadialCard(
-                score: analysis.keywordDensityScore ?? 0,
+              child: ScoreCard(
+                score: analysis.keywordDensityScore,
                 label: 'Keyword Density',
                 description: 'Keyword usage effectiveness',
               ),
@@ -441,47 +491,45 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen>
 
   Widget _buildFeedbackTab(AnalysisModel analysis, ThemeData theme) {
     final hasFeedback =
-        (analysis.matchedKeywords?.isNotEmpty ?? false) ||
-        (analysis.missingKeywords?.isNotEmpty ?? false) ||
-        (analysis.grammarIssues?.isNotEmpty ?? false) ||
-        (analysis.actionVerbSuggestions?.isNotEmpty ?? false) ||
-        (analysis.chronologyWarnings?.isNotEmpty ?? false) ||
-        (analysis.atsOptimizationTips?.isNotEmpty ?? false);
+        analysis.generalSuggestions.isNotEmpty ||
+        analysis.atsOptimizationTips.isNotEmpty ||
+        analysis.actionVerbSuggestions.isNotEmpty ||
+        analysis.chronologyWarnings.isNotEmpty ||
+        analysis.missingKeywords.isNotEmpty ||
+        analysis.matchedKeywords.isNotEmpty ||
+        analysis.grammarIssues.isNotEmpty ||
+        analysis.atsOptimizationExamples.isNotEmpty;
 
-    return RefreshIndicator(
-      onRefresh: _startAnalysis,
-      color: theme.colorScheme.primary,
-      child: CustomScrollView(
-        slivers: [
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: FadeInUp(
-                child:
-                    hasFeedback
-                        ? _buildFeedbackSection(analysis, theme)
-                        : Card(
-                          elevation: 2,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Text(
-                              'No feedback available. Try re-analyzing or uploading a different resume.',
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant,
-                              ),
-                              textAlign: TextAlign.center,
+    return CustomScrollView(
+      slivers: [
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: FadeInUp(
+              child:
+                  hasFeedback
+                      ? _buildFeedbackSection(analysis, theme)
+                      : Card(
+                        elevation: 2,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Text(
+                            'No feedback available. Try re-analyzing or uploading a different resume.',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
                             ),
+                            textAlign: TextAlign.center,
                           ),
                         ),
-              ),
+                      ),
             ),
           ),
-          const SliverToBoxAdapter(child: SizedBox(height: 80)),
-        ],
-      ),
+        ),
+        const SliverToBoxAdapter(child: SizedBox(height: 80)),
+      ],
     );
   }
 
@@ -497,53 +545,73 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen>
           ),
         ),
         const SizedBox(height: 12),
-        if ((analysis.matchedKeywords?.isNotEmpty ?? false) ||
-            (analysis.missingKeywords?.isNotEmpty ?? false))
+        if (analysis.generalSuggestions.isNotEmpty)
           FeedbackCard(
-            title: 'Keyword Analysis',
-            collapsible: true,
-            child: KeywordFeedback(
-              matchedKeywords: analysis.matchedKeywords ?? [],
-              missingKeywords: analysis.missingKeywords ?? [],
-            ),
-          ),
-        if (analysis.grammarIssues?.isNotEmpty ?? false)
-          FeedbackCard(
-            title: 'Grammar Issues',
+            title: 'General Suggestions',
             collapsible: true,
             child: FeedbackList(
-              items: analysis.grammarIssues ?? [],
-              icon: Icons.error_outline,
-              color: Colors.red,
-            ),
-          ),
-        if (analysis.actionVerbSuggestions?.isNotEmpty ?? false)
-          FeedbackCard(
-            title: 'Action Verb Suggestions',
-            collapsible: true,
-            child: FeedbackList(
-              items: analysis.actionVerbSuggestions ?? [],
-              icon: Icons.arrow_forward,
+              items: analysis.generalSuggestions,
+              icon: Icons.lightbulb_outline,
               color: theme.colorScheme.primary,
             ),
           ),
-        if (analysis.chronologyWarnings?.isNotEmpty ?? false)
-          FeedbackCard(
-            title: 'Timeline Warnings',
-            collapsible: true,
-            child: FeedbackList(
-              items: analysis.chronologyWarnings ?? [],
-              icon: Icons.warning_amber,
-              color: Colors.orange,
-            ),
-          ),
-        if (analysis.atsOptimizationTips?.isNotEmpty ?? false)
+        if (analysis.atsOptimizationTips.isNotEmpty)
           FeedbackCard(
             title: 'ATS Optimization Tips',
             collapsible: true,
             child: FeedbackList(
-              items: analysis.atsOptimizationTips ?? [],
+              items: analysis.atsOptimizationTips,
               icon: Icons.lightbulb_outline,
+              color: theme.colorScheme.primary,
+            ),
+          ),
+        if (analysis.actionVerbSuggestions.isNotEmpty)
+          FeedbackCard(
+            title: 'Action Verb Suggestions',
+            collapsible: true,
+            child: FeedbackList(
+              items: analysis.actionVerbSuggestions,
+              icon: Icons.arrow_forward,
+              color: theme.colorScheme.primary,
+            ),
+          ),
+        if (analysis.chronologyWarnings.isNotEmpty)
+          FeedbackCard(
+            title: 'Timeline Warnings',
+            collapsible: true,
+            child: FeedbackList(
+              items: analysis.chronologyWarnings,
+              icon: Icons.warning_amber,
+              color: Colors.orange,
+            ),
+          ),
+        if (analysis.matchedKeywords.isNotEmpty ||
+            analysis.missingKeywords.isNotEmpty)
+          FeedbackCard(
+            title: 'Keyword Analysis',
+            collapsible: true,
+            child: KeywordFeedback(
+              matchedKeywords: analysis.matchedKeywords,
+              missingKeywords: analysis.missingKeywords,
+            ),
+          ),
+        if (analysis.grammarIssues.isNotEmpty)
+          FeedbackCard(
+            title: 'Grammar Issues',
+            collapsible: true,
+            child: FeedbackList(
+              items: analysis.grammarIssues,
+              icon: Icons.error_outline,
+              color: Colors.red,
+            ),
+          ),
+        if (analysis.atsOptimizationExamples.isNotEmpty)
+          FeedbackCard(
+            title: 'ATS Optimization Examples',
+            collapsible: true,
+            child: FeedbackList(
+              items: analysis.atsOptimizationExamples,
+              icon: Icons.lightbulb,
               color: theme.colorScheme.primary,
             ),
           ),
@@ -552,103 +620,95 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen>
   }
 
   Widget _buildSectionsTab(AnalysisModel analysis, ThemeData theme) {
-    return RefreshIndicator(
-      onRefresh: _startAnalysis,
-      color: theme.colorScheme.primary,
-      child: CustomScrollView(
-        slivers: [
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: FadeInUp(
-                child:
-                    analysis.sections.isNotEmpty
-                        ? FeedbackCard(
-                          title: 'Section Analysis',
-                          collapsible: false,
-                          child: Column(
-                            children:
-                                analysis.sections.asMap().entries.map((entry) {
-                                  final section = entry.value;
-                                  return FadeInUp(
-                                    delay: Duration(
-                                      milliseconds: 100 * entry.key,
-                                    ),
-                                    child: SectionFeedbackCard(
-                                      section: section,
-                                      onImprovePressed:
-                                          () => _showImprovementDialog(
-                                            context,
-                                            section,
-                                          ),
-                                    ),
-                                  );
-                                }).toList(),
-                          ),
-                        )
-                        : Card(
-                          elevation: 2,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Text(
-                              'No section analysis available. Try re-analyzing or uploading a different resume.',
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant,
-                              ),
-                              textAlign: TextAlign.center,
+    return CustomScrollView(
+      slivers: [
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: FadeInUp(
+              child:
+                  analysis.sections.isNotEmpty
+                      ? FeedbackCard(
+                        title: 'Section Analysis',
+                        collapsible: false,
+                        child: Column(
+                          children:
+                              analysis.sections.asMap().entries.map((entry) {
+                                final section = entry.value;
+                                return FadeInUp(
+                                  delay: Duration(
+                                    milliseconds: 100 * entry.key,
+                                  ),
+                                  child: SectionFeedbackCard(
+                                    section: section,
+                                    onImprovePressed:
+                                        () => _showImprovementDialog(
+                                          context,
+                                          section,
+                                        ),
+                                  ),
+                                );
+                              }).toList(),
+                        ),
+                      )
+                      : Card(
+                        elevation: 2,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Text(
+                            'No section analysis available. Try re-analyzing or uploading a different resume.',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
                             ),
+                            textAlign: TextAlign.center,
                           ),
                         ),
-              ),
+                      ),
             ),
           ),
-          const SliverToBoxAdapter(child: SizedBox(height: 80)),
-        ],
-      ),
+        ),
+        const SliverToBoxAdapter(child: SizedBox(height: 80)),
+      ],
     );
   }
 
   Widget _buildConfidenceTab(AnalysisModel analysis, ThemeData theme) {
-    return RefreshIndicator(
-      onRefresh: _startAnalysis,
-      color: theme.colorScheme.primary,
-      child: CustomScrollView(
-        slivers: [
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: FadeInUp(
-                child: FeedbackCard(
-                  title: 'Analysis Confidence',
-                  collapsible: false,
-                  child: Column(
-                    children: [
-                      ScoreRadialCard(
-                        score: analysis.confidenceScore ?? 0,
-                        label: 'Confidence',
-                        description: 'Accuracy of the analysis',
-                        compact: true,
+    return CustomScrollView(
+      slivers: [
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: FadeInUp(
+              child: FeedbackCard(
+                title: 'Analysis Confidence',
+                collapsible: false,
+                child: Column(
+                  children: [
+                    ScoreCard(
+                      score: analysis.confidenceScore,
+                      label: 'Confidence',
+                      description: 'Accuracy of the analysis',
+                      compact: true,
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'This analysis has a confidence score of ${analysis.confidenceScore}%, indicating the reliability of the results.',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onBackground,
                       ),
-                      const SizedBox(height: 12),
-                      Text(
-                        'This analysis has a confidence score of ${analysis.confidenceScore ?? 0}%, indicating the reliability of the results.',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.onBackground,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
                 ),
               ),
             ),
           ),
-          const SliverToBoxAdapter(child: SizedBox(height: 80)),
-        ],
-      ),
+        ),
+        const SliverToBoxAdapter(child: SizedBox(height: 80)),
+      ],
     );
   }
 
@@ -672,6 +732,7 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen>
                       'Improve ${section.name}',
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
+                        color: const Color(0xFF4CAF50),
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -688,9 +749,39 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen>
                         color: Theme.of(context).colorScheme.surfaceContainer,
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: Text(
-                        section.content,
-                        style: Theme.of(context).textTheme.bodyMedium,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children:
+                            section.content
+                                .map(
+                                  (item) => Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 4,
+                                    ),
+                                    child: Row(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        const Icon(
+                                          Icons.circle,
+                                          size: 8,
+                                          color: Color(0xFF388E3C),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: Text(
+                                            item,
+                                            style:
+                                                Theme.of(
+                                                  context,
+                                                ).textTheme.bodyMedium,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                )
+                                .toList(),
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -708,7 +799,11 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen>
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Icon(Icons.circle, size: 8),
+                              const Icon(
+                                Icons.circle,
+                                size: 8,
+                                color: Color(0xFF388E3C),
+                              ),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
@@ -735,7 +830,11 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen>
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Icon(Icons.circle, size: 8),
+                            const Icon(
+                              Icons.circle,
+                              size: 8,
+                              color: Color(0xFF388E3C),
+                            ),
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
@@ -753,8 +852,15 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen>
                       child: TextButton(
                         onPressed: () => Navigator.pop(context),
                         style: TextButton.styleFrom(
-                          foregroundColor:
-                              Theme.of(context).colorScheme.primary,
+                          foregroundColor: const Color(0xFF4CAF50),
+                          backgroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
                         ),
                         child: const Text('Close'),
                       ),

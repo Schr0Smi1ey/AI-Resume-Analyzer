@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:animate_do/animate_do.dart';
+import 'keyword_chips.dart';
 
 class KeywordFeedback extends StatelessWidget {
   final List<String> matchedKeywords;
@@ -18,61 +18,26 @@ class KeywordFeedback extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (matchedKeywords.isNotEmpty) ...[
-          Text(
-            'Matched Keywords:',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
+        Text(
+          'Matched Keywords:',
+          style: theme.textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: theme.colorScheme.onSurface,
           ),
-          const SizedBox(height: 8),
-          FadeIn(
-            child: Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children:
-                  matchedKeywords
-                      .map((keyword) => _buildChip(keyword, Colors.green))
-                      .toList(),
-            ),
-          ),
-          const SizedBox(height: 16),
-        ],
-        if (missingKeywords.isNotEmpty) ...[
-          Text(
-            'Missing Keywords:',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 8),
-          FadeIn(
-            child: Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children:
-                  missingKeywords
-                      .map((keyword) => _buildChip(keyword, Colors.orange))
-                      .toList(),
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-
-  Widget _buildChip(String keyword, Color color) {
-    return Chip(
-      label: Text(
-        keyword,
-        style: TextStyle(
-          color: color.computeLuminance() > 0.5 ? Colors.black : Colors.white,
         ),
-      ),
-      backgroundColor: color,
-      padding: const EdgeInsets.symmetric(horizontal: 8),
-      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        const SizedBox(height: 8),
+        KeywordChips(keywords: matchedKeywords, color: const Color(0xFF4CAF50)),
+        const SizedBox(height: 16),
+        Text(
+          'Missing Keywords:',
+          style: theme.textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: theme.colorScheme.onSurface,
+          ),
+        ),
+        const SizedBox(height: 8),
+        KeywordChips(keywords: missingKeywords, color: Colors.red),
+      ],
     );
   }
 }

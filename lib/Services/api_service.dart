@@ -3,25 +3,25 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import '../model/analysis_model.dart';
+import '../model/analysis_model.dart' as model;
 
 class ApiService extends ChangeNotifier {
   static const String _apiUrl = "https://openrouter.ai/api/v1/chat/completions";
   bool _isLoading = false;
   String? _lastError;
-  AnalysisModel? _lastAnalysis;
+  model.AnalysisModel? _lastAnalysis;
   String? _lastRawResponse;
   String? _lastCleanedResponse;
 
   bool get isLoading => _isLoading;
   String? get lastError => _lastError;
-  AnalysisModel? get lastAnalysis => _lastAnalysis;
+  model.AnalysisModel? get lastAnalysis => _lastAnalysis;
   String? get lastRawResponse => _lastRawResponse;
   String? get lastCleanedResponse => _lastCleanedResponse;
 
-  Future<AnalysisModel> analyzeResume({
+  Future<model.AnalysisModel> analyzeResume({
     required String extractedText,
-    required String jobDescription,
+    String jobDescription = '',
     String filePath = '',
   }) async {
     _isLoading = true;
@@ -33,9 +33,10 @@ class ApiService extends ChangeNotifier {
     try {
       final String? apiKey = dotenv.env['OPENROUTER_API_KEY'];
       if (apiKey == null || apiKey.isEmpty) {
-        throw Exception("API Key not configured in .env file");
+        throw Exception('API Key missing in .env file (OPENROUTER_API_KEY).');
       }
 
+      debugPrint('Sending API request...');
       final prompt = _buildStrictAnalysisPrompt(
         resumeText: extractedText,
         jobDescription: jobDescription,
@@ -44,17 +45,15 @@ class ApiService extends ChangeNotifier {
       final response = await _sendAnalysisRequest(apiKey, prompt);
       _lastRawResponse = response.body;
 
-      try {
-        final analysis = _parseAndCleanResponse(response);
-        _lastAnalysis = analysis;
-        return analysis;
-      } catch (e) {
-        _lastCleanedResponse = _attemptToClean(response.body);
-        throw _createDetailedException(e, response.body);
-      }
+      debugPrint('API response received: ${response.statusCode}');
+      final analysis = _parseAndCleanResponse(response);
+      _lastAnalysis = analysis;
+      debugPrint('Analysis parsed successfully.');
+      return analysis;
     } catch (e) {
       _lastError = e.toString();
-      rethrow;
+      debugPrint('Analyze Resume Error: $e');
+      throw Exception('Failed to analyze resume: $e');
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -62,16 +61,14 @@ class ApiService extends ChangeNotifier {
   }
 
   Exception _createDetailedException(dynamic error, String rawResponse) {
-    final buffer = StringBuffer("Analysis failed:\n${error.toString()}");
-
+    final buffer = StringBuffer('Analysis failed:\n$error');
     if (_lastCleanedResponse != null) {
-      buffer.write("\n\nCleaned Response (scrollable in UI):");
+      buffer.write('\n\nCleaned Response:\n$_lastCleanedResponse');
     } else {
       buffer.write(
-        "\n\nRaw Response (truncated): ${_truncateResponse(rawResponse)}",
+        '\n\nRaw Response (truncated):\n${_truncateResponse(rawResponse)}',
       );
     }
-
     return Exception(buffer.toString());
   }
 
@@ -80,73 +77,85 @@ class ApiService extends ChangeNotifier {
     required String jobDescription,
   }) {
     return """
-    You are an expert resume analyst with deep knowledge of Applicant Tracking Systems (ATS), job market trends, and resume optimization. Analyze the provided resume against the job description and return a detailed JSON response. The analysis must include:
+You are an AI-powered resume analyzer with expertise in ATS optimization, job market trends, and resume best practices. Analyze the provided resume (and optional job description) to produce a structured JSON report with detailed, actionable insights. Follow the schema below exactly, ensuring all fields are populated with relevant, concise, and user-friendly feedback optimized for UI display. The 'summary' should be a detailed overview (at least 50 words) of strengths and weaknesses. The 'content' field in 'sections' should be an array of strings for bullet-point display (e.g., multiple projects or items).
 
-    1. ATS compatibility metrics (keyword optimization, formatting, scannability).
-    2. Grammar and readability analysis (spelling, grammar, clarity, Flesch-Kincaid score).
-    3. Job requirements coverage (skills, experience, qualifications alignment).
-    4. Section-by-section evaluation (e.g., Education, Experience, Skills).
-    5. Specific, actionable improvement suggestions with examples.
-    6. Resume type detection (e.g., Chronological, Functional, Combination) based on structure and content.
-    7. Keyword density and relevance analysis.
-    8. Section coherence (logical flow, consistency, relevance to job).
-    9. ATS-specific optimization tips (e.g., avoiding headers/footers, using standard fonts).
-    10. Confidence score for the analysis accuracy.
-
-    Expected JSON structure:
+📐 Output JSON Schema
+{
+  "summary": "string",
+  "success": boolean,
+  "metadata": {
+    "name": "string",
+    "email": "string",
+    "phone": "string",
+    "address": "string",
+    "resumeType": "string",
+    "experienceLevel": "string",
+    "industry": "string"
+  },
+  "atsScore": integer,
+  "grammarScore": integer,
+  "readabilityScore": integer,
+  "verbQualityScore": integer,
+  "formatScore": integer,
+  "jobMatchScore": integer,
+  "coherenceScore": integer,
+  "keywordDensityScore": integer,
+  "generalSuggestions": ["string"],
+  "atsOptimizationTips": ["string"],
+  "actionVerbSuggestions": ["string"],
+  "chronologyWarnings": ["string"],
+  "missingKeywords": ["string"],
+  "matchedKeywords": ["string"],
+  "grammarIssues": ["string"],
+  "atsOptimizationExamples": ["string"],
+  "sections": [
     {
-      "summary": "string (brief overview of resume quality and job fit)",
-      "success": boolean (true if analysis completed successfully),
-      "atsScore": 0-100 (ATS compatibility score),
-      "grammarScore": 0-100 (grammar and spelling quality),
-      "readabilityScore": 0-100 (clarity and ease of reading),
-      "verbQualityScore": 0-100 (strength of action verbs),
-      "formatScore": 0-100 (visual and structural quality),
-      "jobMatchScore": 0-100 (alignment with job requirements),
-      "coherenceScore": 0-100 (logical flow and consistency),
-      "keywordDensityScore": 0-100 (keyword usage effectiveness),
-      "resumeType": "string (e.g., Chronological, Functional, Combination)",
-      "confidenceScore": 0-100 (analysis accuracy confidence),
-      "sections": [
-        {
-          "name": "string (e.g., Education, Experience)",
-          "content": "string (extracted content of the section)",
-          "score": 0-100 (section quality score),
-          "feedback": "string (specific feedback)",
-          "suggestions": ["string (actionable suggestions)"],
-          "improvementExamples": ["string (specific examples for improvement)"]
-        }
-      ],
-      "missingKeywords": ["string (keywords from job description not in resume)"],
-      "matchedKeywords": ["string (keywords present in both resume and job description)"],
-      "grammarIssues": ["string (specific grammar/spelling issues)"],
-      "actionVerbSuggestions": ["string (suggested verbs to strengthen resume)"],
-      "chronologyWarnings": ["string (issues with timeline, e.g., gaps, overlaps)"],
-      "atsOptimizationTips": ["string (specific tips for ATS compatibility)"],
-      "rawResponse": "string (optional raw AI response)"
+      "name": "string",
+      "content": ["string"],
+      "score": integer,
+      "feedback": "string",
+      "suggestions": ["string"],
+      "improvementExamples": ["string"]
     }
+  ],
+  "confidenceScore": integer,
+  "rawResponse": "string",
+  "timestamp": "string"
+}
 
-    Ensure all scores are integers between 0 and 100. Provide detailed, actionable feedback and examples. Return only valid JSON without additional text or formatting. If a score cannot be calculated, return 0 for that field.
+🛠️ Guidelines
+- Summary: Detailed (min 50 words), e.g., "Strong MERN stack skills with clear project examples, but lacks quantifiable metrics and ATS optimization. Improve keyword density and formatting for better compatibility."
+- Scoring: 0-100, deduct for issues (e.g., ATS: -10 for low keywords, Grammar: -5 for typos).
+- Feedback: Max 3 items per list, specific (e.g., "Add 'Agile' to Skills"), use fallbacks (e.g., "No issues detected").
+- Sections: Include "Objective", "Education", "Technical Skills", "Projects", "Certifications", "Achievements", "Other". Use standard names. 'content' as array for bullet points.
+- Confidence: 50-100, lower for poor data (e.g., empty resume).
+- Timestamp: ISO 8601 (e.g., "2025-05-21T23:00:00Z").
+- Output: Valid JSON, no extra text.
 
-    Job Description:
-    ${jobDescription.trim()}
-
-    Resume Content:
-    ${resumeText.trim()}
-    """;
+📝 Inputs
+Job Description: ${jobDescription.trim().isEmpty ? 'Not provided. Infer software engineering requirements (e.g., Python, Agile, DevOps).' : jobDescription.trim()}
+Resume Content: ${resumeText.trim().isEmpty ? 'Not provided. Assume mid-level software engineer resume.' : resumeText.trim()}
+""";
   }
 
   Future<http.Response> _sendAnalysisRequest(
     String apiKey,
     String prompt,
   ) async {
-    return await http
-        .post(
-          Uri.parse(_apiUrl),
-          headers: _buildHeaders(apiKey),
-          body: jsonEncode(_buildRequestBody(prompt)),
-        )
-        .timeout(const Duration(seconds: 180));
+    try {
+      final response = await http
+          .post(
+            Uri.parse(_apiUrl),
+            headers: _buildHeaders(apiKey),
+            body: jsonEncode(_buildRequestBody(prompt)),
+          )
+          .timeout(const Duration(seconds: 180));
+      debugPrint('API request sent, status: ${response.statusCode}');
+      return response;
+    } catch (e) {
+      debugPrint('Send Request Error: $e');
+      throw Exception('Failed to send API request: $e');
+    }
   }
 
   Map<String, String> _buildHeaders(String apiKey) {
@@ -165,7 +174,7 @@ class ApiService extends ChangeNotifier {
         {
           "role": "system",
           "content":
-              "You must return only valid JSON without any additional text or formatting.",
+              "Return only valid JSON without text, formatting, or code fences.",
         },
         {"role": "user", "content": prompt},
       ],
@@ -174,10 +183,13 @@ class ApiService extends ChangeNotifier {
     };
   }
 
-  AnalysisModel _parseAndCleanResponse(http.Response response) {
+  model.AnalysisModel _parseAndCleanResponse(http.Response response) {
     if (response.statusCode != 200) {
+      debugPrint(
+        'API Error: ${response.statusCode}, Body: ${_truncateResponse(response.body)}',
+      );
       throw Exception(
-        "API Error ${response.statusCode}: ${_truncateResponse(response.body)}",
+        'API Error ${response.statusCode}: ${_truncateResponse(response.body)}',
       );
     }
 
@@ -185,16 +197,14 @@ class ApiService extends ChangeNotifier {
     _lastCleanedResponse = cleanedBody;
 
     try {
-      final Map<String, dynamic> jsonResponse = jsonDecode(cleanedBody);
-      debugPrint(
-        "Parsed JSON response: ${jsonEncode(jsonResponse)}",
-      ); // Debug log
+      final jsonResponse = jsonDecode(cleanedBody) as Map<String, dynamic>;
+      debugPrint('Parsed JSON Response: ${jsonEncode(jsonResponse)}');
       final content = _extractContentFromResponse(jsonResponse);
-      return _parseValidatedAnalysis(content);
+      final analysisJson = jsonDecode(content) as Map<String, dynamic>;
+      return _parseValidatedAnalysis(analysisJson);
     } catch (e) {
-      throw Exception(
-        "Failed to parse response: ${e.toString()}\nCleaned response: $cleanedBody",
-      );
+      debugPrint('Parse Response Error: $e');
+      throw Exception('Failed to parse response: $e\nCleaned: $cleanedBody');
     }
   }
 
@@ -207,31 +217,37 @@ class ApiService extends ChangeNotifier {
           jsonResponse['choices'][0]['message']['content'] != null) {
         return jsonResponse['choices'][0]['message']['content'] as String;
       }
-
-      debugPrint("Invalid structure in OpenRouter response: $jsonResponse");
-      throw Exception(
-        "Invalid response structure: 'choices[0].message.content' not found or null.\nRaw JSON: ${jsonEncode(jsonResponse)}",
-      );
+      debugPrint('Invalid OpenRouter response: $jsonResponse');
+      throw Exception('Invalid response: choices[0].message.content missing.');
     } catch (e) {
-      throw Exception("Invalid response structure: ${e.toString()}");
+      debugPrint('Extract Content Error: $e');
+      throw Exception('Invalid response structure: $e');
     }
   }
 
   String _cleanJsonResponse(String rawResponse) {
-    String cleaned = rawResponse.replaceAll(RegExp(r'```(json)?'), '').trim();
-    final jsonMatch = RegExp(r'\{[\s\S]*\}').firstMatch(cleaned);
-    if (jsonMatch == null) {
-      throw FormatException("No valid JSON found in response");
+    try {
+      String cleaned = rawResponse.replaceAll(RegExp(r'```(json)?'), '').trim();
+      final jsonMatch = RegExp(r'\{[\s\S]*\}').firstMatch(cleaned);
+      if (jsonMatch == null) {
+        throw FormatException('No valid JSON found in response');
+      }
+      return jsonMatch.group(0)!;
+    } catch (e) {
+      debugPrint('Clean JSON Error: $e');
+      throw FormatException('Failed to clean JSON: $e');
     }
-    return jsonMatch.group(0)!;
   }
 
-  AnalysisModel _parseValidatedAnalysis(String content) {
+  model.AnalysisModel _parseValidatedAnalysis(Map<String, dynamic> content) {
     try {
-      final analysisJson = jsonDecode(content) as Map<String, dynamic>;
-      return AnalysisModel.fromJson(analysisJson);
+      debugPrint('Parsing Analysis JSON: ${jsonEncode(content)}');
+      final analysis = model.AnalysisModel.fromJson(content);
+      debugPrint('Parsed AnalysisModel: ${jsonEncode(analysis.toJson())}');
+      return analysis;
     } catch (e) {
-      throw Exception("Failed to parse analysis: ${e.toString()}");
+      debugPrint('Parse Analysis Error: $e');
+      throw Exception('Failed to parse analysis JSON: $e');
     }
   }
 
@@ -239,6 +255,7 @@ class ApiService extends ChangeNotifier {
     try {
       return _cleanJsonResponse(rawResponse);
     } catch (e) {
+      debugPrint('Attempt Clean Error: $e');
       final jsonStart = rawResponse.indexOf('{');
       return jsonStart >= 0 ? rawResponse.substring(jsonStart) : rawResponse;
     }
