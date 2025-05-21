@@ -8,7 +8,13 @@ import 'package:http/http.dart' as http;
 class AuthService {
   final FirebaseAuth _auth;
 
+<<<<<<< HEAD
   AuthService._internal() : _auth = FirebaseAuth.instance;
+=======
+  AuthService._internal() : _auth = FirebaseAuth.instance {
+    _initializeFirebase();
+  }
+>>>>>>> 4fa26bbdaa87cc69a5d317773c659969cf7cd551
 
   static final AuthService _instance = AuthService._internal();
 
@@ -18,17 +24,38 @@ class AuthService {
 
   User? get currentUser => _auth.currentUser;
 
+<<<<<<< HEAD
+=======
+  Future<void> _initializeFirebase() async {
+    try {
+      if (Firebase.apps.isEmpty) {
+        await Firebase.initializeApp();
+        print('Firebase initialized successfully.');
+      }
+    } catch (e) {
+      print('Firebase initialization failed: $e');
+      throw AuthException(
+        'firebase-init-failed',
+        'Failed to initialize Firebase: $e',
+      );
+    }
+  }
+
+>>>>>>> 4fa26bbdaa87cc69a5d317773c659969cf7cd551
   Future<User?> signInWithEmailAndPassword(
     String email,
     String password,
   ) async {
     try {
+<<<<<<< HEAD
       if (Firebase.apps.isEmpty) {
         throw AuthException(
           'firebase-not-initialized',
           'Firebase is not initialized. Please try again later.',
         );
       }
+=======
+>>>>>>> 4fa26bbdaa87cc69a5d317773c659969cf7cd551
       final credential = await _auth.signInWithEmailAndPassword(
         email: email,
         password: password,
@@ -58,12 +85,15 @@ class AuthService {
     String password,
   ) async {
     try {
+<<<<<<< HEAD
       if (Firebase.apps.isEmpty) {
         throw AuthException(
           'firebase-not-initialized',
           'Firebase is not initialized. Please try again later.',
         );
       }
+=======
+>>>>>>> 4fa26bbdaa87cc69a5d317773c659969cf7cd551
       final credential = await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
@@ -86,6 +116,7 @@ class AuthService {
     }
   }
 
+<<<<<<< HEAD
   Future<User?> signInWithGoogle() async {
     try {
       if (Firebase.apps.isEmpty) {
@@ -95,6 +126,13 @@ class AuthService {
         );
       }
       await dotenv.load();
+=======
+  /// Google Sign-In for Windows desktop using OAuth web flow.
+  Future<User?> signInWithGoogle() async {
+    try {
+      await _initializeFirebase();
+      await dotenv.load(); // Load environment variables
+>>>>>>> 4fa26bbdaa87cc69a5d317773c659969cf7cd551
 
       final clientId = dotenv.env['GOOGLE_OAUTH_CLIENT_ID'];
       final clientSecret = dotenv.env['GOOGLE_OAUTH_CLIENT_SECRET'];
@@ -129,7 +167,11 @@ class AuthService {
 
       final result = await FlutterWebAuth2.authenticate(
         url: authUrl.toString(),
+<<<<<<< HEAD
         callbackUrlScheme: Uri.parse(redirectUri).scheme,
+=======
+        callbackUrlScheme: Uri.parse(redirectUri).scheme, // 'http' or 'https'
+>>>>>>> 4fa26bbdaa87cc69a5d317773c659969cf7cd551
       );
 
       final code = Uri.parse(result).queryParameters['code'];
@@ -178,12 +220,15 @@ class AuthService {
 
   Future<void> signOut() async {
     try {
+<<<<<<< HEAD
       if (Firebase.apps.isEmpty) {
         throw AuthException(
           'firebase-not-initialized',
           'Firebase is not initialized. Please try again later.',
         );
       }
+=======
+>>>>>>> 4fa26bbdaa87cc69a5d317773c659969cf7cd551
       await _auth.signOut();
       print('User signed out successfully');
     } catch (e) {
@@ -193,6 +238,7 @@ class AuthService {
   }
 
   Future<bool> isEmailVerified() async {
+<<<<<<< HEAD
     try {
       if (Firebase.apps.isEmpty) {
         throw AuthException(
@@ -270,6 +316,15 @@ class AuthService {
       print('Unexpected display name update error: $e');
       throw AuthException('unknown', 'Failed to update display name: $e');
     }
+=======
+    final user = _auth.currentUser;
+    if (user != null) {
+      await user.reload();
+      print('Email verified status: ${user.emailVerified}');
+      return user.emailVerified;
+    }
+    return false;
+>>>>>>> 4fa26bbdaa87cc69a5d317773c659969cf7cd551
   }
 
   String _mapFirebaseErrorToMessage(String code) {
@@ -290,8 +345,11 @@ class AuthService {
         return 'Please verify your email before logging in.';
       case 'account-exists-with-different-credential':
         return 'An account already exists with a different sign-in method.';
+<<<<<<< HEAD
       case 'requires-recent-login':
         return 'Please sign out and sign in again to perform this action.';
+=======
+>>>>>>> 4fa26bbdaa87cc69a5d317773c659969cf7cd551
       default:
         return 'An error occurred: $code';
     }

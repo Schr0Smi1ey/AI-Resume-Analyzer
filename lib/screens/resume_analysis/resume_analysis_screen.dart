@@ -3,13 +3,20 @@ import 'package:animate_do/animate_do.dart';
 import 'package:provider/provider.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../services/api_service.dart';
+<<<<<<< HEAD
 import '../../services/history_service.dart'; // Add for history saving
+=======
+>>>>>>> 4fa26bbdaa87cc69a5d317773c659969cf7cd551
 import '../../model/analysis_model.dart';
 import 'widgets/analysis_header.dart';
 import 'widgets/score_card.dart';
 import 'widgets/feedback_card.dart';
 import 'widgets/keyword_feedback.dart';
+<<<<<<< HEAD
 import 'widgets/section_feedback_card.dart'; // Use this, assuming duplicate resolved
+=======
+import 'widgets/section_feedback_card.dart';
+>>>>>>> 4fa26bbdaa87cc69a5d317773c659969cf7cd551
 import 'widgets/feedback_list.dart';
 import 'widgets/analysis_loading.dart';
 import 'widgets/analysis_error.dart';
@@ -17,6 +24,7 @@ import 'widgets/analysis_error.dart';
 class ResumeAnalysisScreen extends StatefulWidget {
   static const routeName = '/resume-analysis';
   final Map<String, dynamic> args;
+<<<<<<< HEAD
   final AnalysisModel? preloadedAnalysis;
 
   const ResumeAnalysisScreen({
@@ -24,6 +32,10 @@ class ResumeAnalysisScreen extends StatefulWidget {
     required this.args,
     this.preloadedAnalysis,
   });
+=======
+
+  const ResumeAnalysisScreen({super.key, required this.args});
+>>>>>>> 4fa26bbdaa87cc69a5d317773c659969cf7cd551
 
   @override
   State<ResumeAnalysisScreen> createState() => _ResumeAnalysisScreenState();
@@ -35,7 +47,10 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen>
   late final TabController _tabController;
   late final AnimationController _fabAnimationController;
   final ScrollController _scrollController = ScrollController();
+<<<<<<< HEAD
   bool _isInitialized = false; // Add this flag
+=======
+>>>>>>> 4fa26bbdaa87cc69a5d317773c659969cf7cd551
 
   @override
   void initState() {
@@ -45,6 +60,7 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen>
       duration: const Duration(milliseconds: 200),
       vsync: this,
     )..forward();
+<<<<<<< HEAD
 
     // Use preloaded data if available
     _analysisFuture =
@@ -66,6 +82,27 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen>
       debugPrint('Analysis error: $e');
       throw Exception('Failed to analyze resume: $e');
     }
+=======
+    _startAnalysis();
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    _fabAnimationController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _startAnalysis() async {
+    final apiService = Provider.of<ApiService>(context, listen: false);
+    setState(() {
+      _analysisFuture = apiService.analyzeResume(
+        extractedText: widget.args['extractedText'] ?? '',
+        jobDescription: widget.args['jobDescription'] ?? '',
+      );
+    });
+>>>>>>> 4fa26bbdaa87cc69a5d317773c659969cf7cd551
   }
 
   @override
@@ -76,6 +113,7 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen>
     return Scaffold(
       appBar: AppBar(
         title: Text(
+<<<<<<< HEAD
           widget.preloadedAnalysis != null ? 'Historical Analysis' : fileName,
         ),
         actions: [
@@ -85,6 +123,31 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen>
               icon: const Icon(Icons.refresh),
               onPressed: _startAnalysis,
             ),
+=======
+          fileName,
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF4CAF50), Color(0xFF009688)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _startAnalysis,
+            tooltip: 'Re-analyze Resume',
+            color: Colors.white,
+            hoverColor: Colors.white24,
+          ),
+>>>>>>> 4fa26bbdaa87cc69a5d317773c659969cf7cd551
         ],
         elevation: 4,
         shadowColor: Colors.black45,
@@ -104,6 +167,7 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen>
             Tab(text: 'Confidence'),
           ],
         ),
+<<<<<<< HEAD
         backgroundColor: Colors.transparent,
         flexibleSpace: Container(
           decoration: const BoxDecoration(
@@ -114,6 +178,8 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen>
             ),
           ),
         ),
+=======
+>>>>>>> 4fa26bbdaa87cc69a5d317773c659969cf7cd551
       ),
       floatingActionButton: ScaleTransition(
         scale: Tween<double>(begin: 1.0, end: 1.2).animate(
@@ -150,10 +216,13 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen>
     AsyncSnapshot<AnalysisModel> snapshot,
     ThemeData theme,
   ) {
+<<<<<<< HEAD
     if (!_isInitialized) {
       return const Center(child: CircularProgressIndicator());
     }
 
+=======
+>>>>>>> 4fa26bbdaa87cc69a5d317773c659969cf7cd551
     if (snapshot.connectionState == ConnectionState.waiting) {
       return const AnalysisLoading();
     }
@@ -161,11 +230,15 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen>
     if (snapshot.hasError) {
       return AnalysisError(
         message: snapshot.error.toString(),
+<<<<<<< HEAD
         onRetry: () {
           setState(() {
             _analysisFuture = _startAnalysis();
           });
         },
+=======
+        onRetry: _startAnalysis,
+>>>>>>> 4fa26bbdaa87cc69a5d317773c659969cf7cd551
       );
     }
 
@@ -178,6 +251,7 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen>
     }
 
     final analysis = snapshot.data!;
+<<<<<<< HEAD
     // Save to history
     WidgetsBinding.instance.addPostFrameCallback((_) {
       // Only save NEW analyses (skip if viewing history)
@@ -189,6 +263,8 @@ class _ResumeAnalysisScreenState extends State<ResumeAnalysisScreen>
       }
     });
 
+=======
+>>>>>>> 4fa26bbdaa87cc69a5d317773c659969cf7cd551
     return TabBarView(
       controller: _tabController,
       physics: const BouncingScrollPhysics(),
