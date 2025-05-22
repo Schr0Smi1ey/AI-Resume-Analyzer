@@ -42,10 +42,8 @@ class AuthService {
       }
       return user;
     } on FirebaseAuthException catch (e) {
-      print('Login error: ${e.code} - ${e.message}');
       throw AuthException(e.code, _mapFirebaseErrorToMessage(e.code));
     } catch (e) {
-      print('Unexpected login error: $e');
       throw AuthException(
         'unknown',
         'An unexpected error occurred during login: $e',
@@ -71,14 +69,11 @@ class AuthService {
       final user = credential.user;
       if (user != null) {
         await user.sendEmailVerification();
-        print('Verification email sent to: $email');
       }
       return user;
     } on FirebaseAuthException catch (e) {
-      print('Registration error: ${e.code} - ${e.message}');
       throw AuthException(e.code, _mapFirebaseErrorToMessage(e.code));
     } catch (e) {
-      print('Unexpected registration error: $e');
       throw AuthException(
         'unknown',
         'An unexpected error occurred during registration: $e',
@@ -125,8 +120,6 @@ class AuthService {
         'prompt': 'consent',
       });
 
-      print('Initiating Google Sign-In...');
-
       final result = await FlutterWebAuth2.authenticate(
         url: authUrl.toString(),
         callbackUrlScheme: Uri.parse(redirectUri).scheme,
@@ -168,7 +161,6 @@ class AuthService {
       final userCredential = await _auth.signInWithCredential(credential);
       return userCredential.user;
     } catch (e) {
-      print('Google Sign-In error: $e');
       throw AuthException(
         'google-sign-in-failed',
         'Google Sign-In failed: ${e.toString()}',
@@ -185,9 +177,7 @@ class AuthService {
         );
       }
       await _auth.signOut();
-      print('User signed out successfully');
     } catch (e) {
-      print('Sign-out error: $e');
       throw AuthException('sign-out-failed', 'Failed to sign out: $e');
     }
   }
@@ -203,12 +193,10 @@ class AuthService {
       final user = _auth.currentUser;
       if (user != null) {
         await user.reload();
-        print('Email verified status: ${user.emailVerified}');
         return user.emailVerified;
       }
       return false;
     } catch (e) {
-      print('Email verification check error: $e');
       throw AuthException(
         'email-verification-failed',
         'Failed to check email verification: $e',
@@ -229,9 +217,7 @@ class AuthService {
         throw AuthException('no-user', 'No user signed in');
       }
       await user.updatePassword(newPassword);
-      print('Password updated successfully');
     } on FirebaseAuthException catch (e) {
-      print('Password update error: ${e.code} - ${e.message}');
       if (e.code == 'requires-recent-login') {
         throw AuthException(
           'requires-recent-login',
@@ -240,7 +226,6 @@ class AuthService {
       }
       throw AuthException(e.code, _mapFirebaseErrorToMessage(e.code));
     } catch (e) {
-      print('Unexpected password update error: $e');
       throw AuthException(
         'unknown',
         'An unexpected error occurred during password update: $e',
@@ -262,12 +247,9 @@ class AuthService {
       }
       await user.updateDisplayName(displayName);
       await user.reload();
-      print('Display name updated successfully');
     } on FirebaseAuthException catch (e) {
-      print('Display name update error: ${e.code} - ${e.message}');
       throw AuthException(e.code, _mapFirebaseErrorToMessage(e.code));
     } catch (e) {
-      print('Unexpected display name update error: $e');
       throw AuthException('unknown', 'Failed to update display name: $e');
     }
   }

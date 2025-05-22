@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../services/history_service.dart';
+import 'package:uuid/uuid.dart';
 import '../../model/analysis_model.dart';
 import '../resume_analysis/resume_analysis_screen.dart';
 
@@ -12,12 +13,18 @@ class HistoryScreen extends StatefulWidget {
 }
 
 class _HistoryScreenState extends State<HistoryScreen> {
-  Future<List<AnalysisModel>>? _historyFuture; // Changed from late to nullable
+  Future<List<AnalysisModel>>? _historyFuture;
 
   @override
   void initState() {
     super.initState();
     _loadHistory();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _loadHistory(); // Reload history when dependencies change (e.g., screen revisited)
   }
 
   void _loadHistory() {
@@ -53,7 +60,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     }
   }
 
-  Future<bool?> _confirmAndDeleteSingle(String timestamp) async {
+  Future<bool?> _confirmAndDeleteSingle(String id) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder:
@@ -66,7 +73,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
     if (confirmed == true) {
       try {
-        await HistoryService().deleteAnalysis(timestamp);
+        await HistoryService().deleteAnalysis(id);
         _loadHistory();
         if (!mounted) return true;
         _showSnackBar('Analysis deleted');
@@ -154,6 +161,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
         backgroundColor: backgroundColor,
         actions: [
           IconButton(
+            icon: Icon(Icons.refresh, color: accentColor),
+            tooltip: 'Refresh History',
+            onPressed: _loadHistory,
+          ),
+          IconButton(
             icon: Icon(Icons.delete_sweep, color: accentColor),
             tooltip: 'Clear All History',
             onPressed: _confirmAndDeleteAll,
@@ -196,8 +208,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       itemCount: historyItems.length,
                       itemBuilder: (context, index) {
                         final item = historyItems[index];
+                        // Fallback for unexpected null ID
+                        final itemId = item.id;
                         return Dismissible(
-                          key: Key(item.timestamp.toIso8601String()),
+                          key: Key(itemId),
                           direction: DismissDirection.endToStart,
                           background: Container(
                             alignment: Alignment.centerRight,
@@ -209,9 +223,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                             ),
                           ),
                           confirmDismiss: (direction) async {
-                            return await _confirmAndDeleteSingle(
-                              item.timestamp.toIso8601String(),
-                            );
+                            return await _confirmAndDeleteSingle(itemId);
                           },
                           onDismissed: (direction) {
                             // The deletion is already handled in confirmDismiss

@@ -19,34 +19,119 @@ import 'services/history_service.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  String? errorMessage;
+
   // Load environment variables
   try {
     await dotenv.load(fileName: ".env");
-    print('Environment variables loaded successfully');
   } catch (e) {
-    print('Error loading .env file: $e');
+    errorMessage = 'Failed to load environment variables: $e';
   }
 
   // Initialize Firebase
-  try {
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
-    print('Firebase initialized successfully');
-  } catch (e) {
-    print('Firebase initialization failed: $e');
-    // Optionally, show an error screen or fallback UI
+  if (errorMessage == null) {
+    try {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+    } catch (e) {
+      errorMessage = 'Failed to initialize Firebase: $e';
+    }
   }
 
   // Set preferred orientations
-  await SystemChrome.setPreferredOrientations([
-    DeviceOrientation.landscapeRight,
-    DeviceOrientation.landscapeLeft,
-    DeviceOrientation.portraitUp,
-    DeviceOrientation.portraitDown,
-  ]);
+  try {
+    await SystemChrome.setPreferredOrientations([
+      DeviceOrientation.landscapeRight,
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]);
+  } catch (e) {
+    errorMessage ??= 'Failed to set device orientations: $e';
+  }
 
-  runApp(const AIResumeAnalyzerApp());
+  // If there's an error, run the app with ErrorScreen; otherwise, run the main app
+  runApp(
+    errorMessage != null
+        ? ErrorScreenApp(errorMessage: errorMessage)
+        : const AIResumeAnalyzerApp(),
+  );
+}
+
+// ErrorScreenApp to display initialization errors
+class ErrorScreenApp extends StatelessWidget {
+  final String errorMessage;
+
+  const ErrorScreenApp({super.key, required this.errorMessage});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'AI Resume Analyzer - Error',
+      debugShowCheckedModeBanner: false,
+      home: ErrorScreen(errorMessage: errorMessage),
+    );
+  }
+}
+
+// ErrorScreen widget to display error messages
+class ErrorScreen extends StatelessWidget {
+  final String errorMessage;
+
+  const ErrorScreen({super.key, required this.errorMessage});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline, color: Colors.red, size: 64),
+              const SizedBox(height: 16),
+              const Text(
+                'Something went wrong',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                errorMessage,
+                style: const TextStyle(fontSize: 16, color: Colors.black54),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: () {
+                  // Optionally, allow retrying the app initialization
+                  SystemNavigator.pop(); // Exit the app, or implement retry logic
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 32,
+                    vertical: 16,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: const Text('Close App', style: TextStyle(fontSize: 16)),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class AIResumeAnalyzerApp extends StatelessWidget {
@@ -70,6 +155,7 @@ class AIResumeAnalyzerApp extends StatelessWidget {
             theme: _buildThemeData(),
             darkTheme: _buildDarkThemeData(),
             themeMode: themeProvider.themeMode,
+            home: const LoginScreen(), // Fallback home screen
             initialRoute: LoginScreen.routeName,
             routes: {
               LoginScreen.routeName: (context) => const LoginScreen(),
@@ -79,15 +165,25 @@ class AIResumeAnalyzerApp extends StatelessWidget {
               HistoryScreen.routeName: (context) => const HistoryScreen(),
               ResumePreviewScreen.routeName:
                   (context) => const ResumePreviewScreen(),
-              ResumeAnalysisScreen.routeName:
-                  (context) => ResumeAnalysisScreen(
-                    args:
-                        ModalRoute.of(context)?.settings.arguments
-                            as Map<String, dynamic>,
-                    preloadedAnalysis:
-                        (ModalRoute.of(context)?.settings.arguments
-                            as Map<String, dynamic>)['preloadedAnalysis'],
-                  ),
+              ResumeAnalysisScreen.routeName: (context) {
+                final args = ModalRoute.of(context)?.settings.arguments;
+                return ResumeAnalysisScreen(
+                  args:
+                      args is Map<String, dynamic>
+                          ? args
+                          : {}, // Fallback to empty map
+                  preloadedAnalysis:
+                      args is Map<String, dynamic>
+                          ? args['preloadedAnalysis']
+                          : null,
+                );
+              },
+            },
+            onUnknownRoute: (settings) {
+              // Fallback for undefined routes
+              return MaterialPageRoute(
+                builder: (context) => const LoginScreen(),
+              );
             },
           );
         },

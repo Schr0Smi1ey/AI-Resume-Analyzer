@@ -2,23 +2,74 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/foundation.dart';
 import '../model/analysis_model.dart';
+import 'package:uuid/uuid.dart';
 
 class HistoryService {
   static const String _historyKey = 'resume_analysis_history';
+  static const String _migrationKey = 'history_migration_done';
   static const int _maxHistoryItems = 50; // Maximum items to keep in history
+
+  // Perform one-time migration to fix old data
+  Future<void> _migrateHistoryData() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (prefs.getBool(_migrationKey) == true) {
+      return; // Migration already done
+    }
+
+    try {
+      final historyJson = prefs.getString(_historyKey);
+      if (historyJson == null) {
+        await prefs.setBool(_migrationKey, true);
+        return;
+      }
+
+      final historyList = jsonDecode(historyJson) as List<dynamic>;
+      final updatedHistory = <AnalysisModel>[];
+      for (var item in historyList) {
+        try {
+          final jsonItem = item as Map<String, dynamic>;
+          // Skip if no ID or invalid ID
+          if (jsonItem['id'] == null || (jsonItem['id'] as String).isEmpty) {
+            jsonItem['id'] = const Uuid().v4();
+          }
+          final analysis = AnalysisModel.fromJson(jsonItem);
+          updatedHistory.add(analysis);
+        } catch (e) {
+          debugPrint('Skipping invalid history item during migration: $e');
+          continue;
+        }
+      }
+
+      // Save updated history
+      await prefs.setString(
+        _historyKey,
+        jsonEncode(updatedHistory.map((e) => e.toJson()).toList()),
+      );
+      await prefs.setBool(_migrationKey, true);
+      debugPrint('History migration completed successfully');
+    } catch (e) {
+      debugPrint('Error during history migration: $e');
+      // Clear history if migration fails to prevent persistent errors
+      await prefs.remove(_historyKey);
+      await prefs.setBool(_migrationKey, true);
+    }
+  }
 
   // Save a new analysis to history
   Future<void> saveAnalysis(AnalysisModel analysis) async {
     try {
+      await _migrateHistoryData();
       final prefs = await SharedPreferences.getInstance();
       final history = await getHistory();
 
-      // Keep only last _maxHistoryItems analyses
+      // Remove any existing item with the same ID
+      history.removeWhere((item) => item.id == analysis.id);
+
       if (history.length >= _maxHistoryItems) {
         history.removeLast();
       }
 
-      history.insert(0, analysis); // Add new at beginning
+      history.insert(0, analysis);
       await prefs.setString(
         _historyKey,
         jsonEncode(history.map((e) => e.toJson()).toList()),
@@ -32,30 +83,38 @@ class HistoryService {
   // Retrieve all history items
   Future<List<AnalysisModel>> getHistory() async {
     try {
+      await _migrateHistoryData(); // Ensure migration is done
       final prefs = await SharedPreferences.getInstance();
       final historyJson = prefs.getString(_historyKey);
       if (historyJson == null) return [];
 
       final historyList = jsonDecode(historyJson) as List<dynamic>;
-      return historyList
-          .map((item) => AnalysisModel.fromJson(item as Map<String, dynamic>))
-          .toList();
+      final validHistory = <AnalysisModel>[];
+      for (var item in historyList) {
+        try {
+          final analysis = AnalysisModel.fromJson(item as Map<String, dynamic>);
+          if (analysis.id.isNotEmpty && analysis.id.length >= 36) {
+            validHistory.add(analysis);
+          } else {
+            debugPrint('Skipping history item with invalid ID: ${analysis.id}');
+          }
+        } catch (e) {
+          debugPrint('Skipping invalid history item: $e');
+          continue;
+        }
+      }
+      return validHistory;
     } catch (e) {
       debugPrint('Error parsing history: $e');
       return [];
     }
   }
 
-  Future<AnalysisModel?> getAnalysisById(String timestamp) async {
+  Future<AnalysisModel?> getAnalysisById(String id) async {
     try {
       final history = await getHistory();
-      final targetTime = DateTime.parse(timestamp);
       try {
-        return history.firstWhere(
-          (item) =>
-              item.timestamp.toIso8601String() == timestamp ||
-              item.timestamp == targetTime,
-        );
+        return history.firstWhere((item) => item.id == id);
       } catch (e) {
         return null;
       }
@@ -65,26 +124,13 @@ class HistoryService {
     }
   }
 
-  Future<void> deleteAnalysis(String timestamp) async {
+  Future<void> deleteAnalysis(String id) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final history = await getHistory();
 
-      DateTime? targetTime;
-      try {
-        targetTime = DateTime.parse(timestamp);
-      } catch (e) {
-        debugPrint('Error parsing timestamp: $e');
-      }
-
       // Create new list without the item to delete
-      final updatedHistory =
-          history.where((item) {
-            if (item.timestamp.toIso8601String() == timestamp) return false;
-            if (targetTime != null && item.timestamp == targetTime)
-              return false;
-            return true;
-          }).toList();
+      final updatedHistory = history.where((item) => item.id != id).toList();
 
       await prefs.setString(
         _historyKey,

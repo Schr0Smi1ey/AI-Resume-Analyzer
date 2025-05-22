@@ -1,6 +1,8 @@
 import 'package:intl/intl.dart';
+import 'package:uuid/uuid.dart';
 
 class AnalysisModel {
+  final String id; // Unique ID
   final String summary;
   final bool success;
   final Metadata metadata;
@@ -28,6 +30,7 @@ class AnalysisModel {
       DateFormat('MMM dd, yyyy HH:mm').format(timestamp);
 
   AnalysisModel({
+    String? id, 
     required this.summary,
     required this.success,
     required this.metadata,
@@ -51,14 +54,55 @@ class AnalysisModel {
     required this.confidenceScore,
     required this.rawResponse,
     required this.timestamp,
-  });
+  }) : id = id ?? const Uuid().v4(); // Generate UUID if not provided
 
   factory AnalysisModel.fromJson(Map<String, dynamic> json) {
     try {
+      // Validate input JSON
+      if (json.isEmpty) {
+        throw const FormatException('Empty JSON data');
+      }
+
       final metadata = Metadata.fromJson(
         json['metadata'] as Map<String, dynamic>? ?? {},
       );
+      final id =
+          (json['id'] as String?)?.isNotEmpty == true
+              ? json['id'] as String
+              : const Uuid().v4();
+      // Ensure ID is a valid UUID
+      if (id.isEmpty || id.length < 36) {
+        print('Invalid ID found in JSON: $id, generating new UUID');
+        return AnalysisModel(
+          id: id,
+          summary: 'Invalid data detected',
+          success: false,
+          metadata: metadata,
+          atsScore: 0,
+          grammarScore: 0,
+          readabilityScore: 0,
+          verbQualityScore: 0,
+          formatScore: 0,
+          jobMatchScore: 0,
+          coherenceScore: 0,
+          keywordDensityScore: 0,
+          generalSuggestions: ['Invalid history data detected.'],
+          atsOptimizationTips: [],
+          actionVerbSuggestions: [],
+          chronologyWarnings: [],
+          missingKeywords: [],
+          matchedKeywords: [],
+          grammarIssues: [],
+          atsOptimizationExamples: [],
+          sections: [],
+          confidenceScore: 0,
+          rawResponse: 'Invalid JSON data',
+          timestamp: DateTime.now(),
+        );
+      }
+
       return AnalysisModel(
+        id: id,
         summary: json['summary'] as String? ?? 'No summary provided.',
         success: json['success'] as bool? ?? false,
         metadata: metadata,
@@ -108,12 +152,47 @@ class AnalysisModel {
             DateTime.now(),
       );
     } catch (e) {
-      throw FormatException('Failed to parse AnalysisModel: $e');
+      print('Failed to parse AnalysisModel: $e, JSON: $json');
+      return AnalysisModel(
+        id: const Uuid().v4(),
+        summary: 'Error parsing analysis',
+        success: false,
+        metadata: Metadata(
+          name: 'Unknown',
+          email: 'Unknown',
+          phone: 'Unknown',
+          address: 'Unknown',
+          resumeType: 'Unknown',
+          experienceLevel: 'Unknown',
+          industry: 'Unknown',
+        ),
+        atsScore: 0,
+        grammarScore: 0,
+        readabilityScore: 0,
+        verbQualityScore: 0,
+        formatScore: 0,
+        jobMatchScore: 0,
+        coherenceScore: 0,
+        keywordDensityScore: 0,
+        generalSuggestions: ['Error occurred while parsing data: $e'],
+        atsOptimizationTips: [],
+        actionVerbSuggestions: [],
+        chronologyWarnings: [],
+        missingKeywords: [],
+        matchedKeywords: [],
+        grammarIssues: [],
+        atsOptimizationExamples: [],
+        sections: [],
+        confidenceScore: 0,
+        rawResponse: 'Error: $e',
+        timestamp: DateTime.now(),
+      );
     }
   }
 
   Map<String, dynamic> toJson() {
     return {
+      'id': id,
       'summary': summary,
       'success': success,
       'metadata': metadata.toJson(),

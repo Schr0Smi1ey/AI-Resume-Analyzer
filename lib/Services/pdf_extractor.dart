@@ -35,19 +35,26 @@ class PdfExtractor {
 
       return {'fullText': fullText, 'links': links};
     } catch (e) {
-      print('Error extracting text and links: $e');
-      return {'fullText': '', 'links': []};
+      throw Exception('Failed to extract text and links from PDF: $e');
     }
   }
 
   /// Returns the full extracted text only (for backward compatibility)
   static Future<String?> extractText(File pdfFile) async {
-    final result = await extractTextAndLinks(pdfFile);
-    return result['fullText'];
+    try {
+      final result = await extractTextAndLinks(pdfFile);
+      return result['fullText'];
+    } catch (e) {
+      throw Exception('Failed to extract text from PDF: $e');
+    }
   }
 
   /// Returns both text and links
   static Future<Map<String, dynamic>> extractResumeDetails(File pdfFile) async {
-    return await extractTextAndLinks(pdfFile);
+    try {
+      return await extractTextAndLinks(pdfFile);
+    } catch (e) {
+      throw Exception('Failed to extract resume details from PDF: $e');
+    }
   }
 }
