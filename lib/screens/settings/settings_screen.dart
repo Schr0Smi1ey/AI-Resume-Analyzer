@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import '../../services/auth_service.dart';
 import '../../services/history_service.dart';
 import '../../services/theme_provider.dart';
-import '../login/login_screen.dart';
+import '../resume_analysis/login/login_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class SettingsScreen extends StatefulWidget {

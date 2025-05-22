@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import '../../services/auth_service.dart';
 import '../history/history_screen.dart';
 import '../settings/settings_screen.dart';
-import '../login/login_screen.dart';
+import '../resume_analysis/login/login_screen.dart';
 import './widgets/home_screen.dart'; // Assumed path
 
 class DashboardScreen extends StatefulWidget {

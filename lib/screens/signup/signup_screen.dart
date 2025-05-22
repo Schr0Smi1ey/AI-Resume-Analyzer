@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:animate_do/animate_do.dart';
 import 'package:provider/provider.dart';
-import '../login/login_screen.dart';
+import '../resume_analysis/login/login_screen.dart';
 import '../dashboard/dashboard_screen.dart';
 import '../../services/auth_service.dart';
 

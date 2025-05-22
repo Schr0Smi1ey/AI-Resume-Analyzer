@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
-import 'screens/login/login_screen.dart';
+import 'screens/resume_analysis/login/login_screen.dart';
 import 'screens/signup/signup_screen.dart';
 import 'screens/dashboard/dashboard_screen.dart';
 import 'screens/settings/settings_screen.dart';
